@@ -8,6 +8,21 @@ import {
 // URL base da API no MockAPI
 const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
 
+// Retorna saudação baseada no horário
+const getSaudacao = () => {
+  const hora = new Date().getHours();
+  if (hora < 12) return 'Bom dia';
+  if (hora < 18) return 'Boa tarde';
+  return 'Boa noite';
+};
+
+// Retorna a data formatada em português
+const getDataFormatada = () => {
+  return new Date().toLocaleDateString('pt-BR', {
+    weekday: 'long', day: '2-digit', month: 'long'
+  });
+};
+
 export default function App() {
   // Estados principais da aplicação
   const [materiais, setMateriais] = useState([]);        // lista de materiais do estoque
@@ -96,12 +111,13 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#1565C0" barStyle="light-content" />
 
-      {/* Cabeçalho */}
-      <View style={styles.header}>
-        <Text style={styles.headerIcon}>🏥</Text>
-        <View>
+     {/* Cabeçalho */}
+     <View style={styles.header}>
+         <Text style={styles.headerIcon}>🏥</Text>
+          <View style={{flex: 1}}>
           <Text style={styles.headerTitle}>Almoxarifado</Text>
-          <Text style={styles.headerSubtitle}>Curso Técnico de Enfermagem</Text>
+          <Text style={styles.headerSubtitle}>{getSaudacao()}, Camila 👋</Text>
+          <Text style={styles.headerSubtitle}>{getDataFormatada()}</Text>
         </View>
       </View>
 
