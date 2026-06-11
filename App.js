@@ -11,6 +11,7 @@ export default function App() {
   const [nome, setNome] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cadastrando, setCadastrando] = useState(false);
 
   const buscarMateriais = async () => {
     setLoading(true);
@@ -31,6 +32,7 @@ export default function App() {
       return;
     }
 
+    setCadastrando(true);
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -45,6 +47,8 @@ export default function App() {
     } catch (error) {
       console.error('Erro ao cadastrar:', error);
       Alert.alert('Erro', 'Não foi possível cadastrar o material.');
+    } finally {
+      setCadastrando(false);
     }
   };
 
@@ -73,8 +77,17 @@ export default function App() {
         keyboardType="numeric"
       />
 
-      <TouchableOpacity testID="btn-cadastrar" style={styles.button} onPress={cadastrarMaterial}>
-        <Text style={styles.buttonText}>Cadastrar</Text>
+      <TouchableOpacity
+        testID="btn-cadastrar"
+        style={[styles.button, cadastrando && styles.buttonDisabled]}
+        onPress={cadastrarMaterial}
+        disabled={cadastrando}
+      >
+        {cadastrando ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Cadastrar</Text>
+        )}
       </TouchableOpacity>
 
       <Text style={styles.subtitle}>Estoque Atual</Text>
@@ -135,6 +148,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 20,
+  },
+  buttonDisabled: {
+    backgroundColor: '#90CAF9',
   },
   buttonText: {
     color: '#fff',
