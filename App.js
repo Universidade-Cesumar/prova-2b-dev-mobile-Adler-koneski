@@ -96,10 +96,10 @@ export default function App() {
     (acc, item) => acc + Number(item.quantidade || 0), 0
   );
 
-  // Filtra materiais pelo campo de busca
-  const materiaisFiltrados = materiais.filter(item =>
-    item.nome.toLowerCase().includes(busca.toLowerCase())
-  );
+   // Filtra materiais pelo campo de busca
+  const materiaisFiltrados = materiais
+    .filter(item => item.nome.toLowerCase().includes(busca.toLowerCase()))
+    .sort((a, b) => a.nome.localeCompare(b.nome));
 
   return (
     <View style={styles.safeArea}>
