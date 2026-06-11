@@ -124,6 +124,12 @@ export default function App() {
           <Text style={[styles.cardNumber, styles.cardNumberDestaque]}>{totalUnidades}</Text>
           <Text style={[styles.cardLabel, styles.cardLabelDestaque]}>Total de{'\n'}Unidades</Text>
         </View>
+        <View style={[styles.card, styles.cardAlerta]}>
+          <Text style={[styles.cardNumber, styles.cardNumberAlerta]}>
+            {materiais.filter(i => Number(i.quantidade) <= 20).length}
+          </Text>
+          <Text style={[styles.cardLabel, styles.cardLabelAlerta]}>Estoque{'\n'}Baixo</Text>
+        </View>
       </View>
 
       {/* Toggle formulário */}
@@ -293,12 +299,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   cardDestaque: { backgroundColor: '#1565C0' },
+  cardAlerta: { backgroundColor: '#FFEBEE' },
   cardNumber: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1565C0',
   },
   cardNumberDestaque: { color: '#fff' },
+  cardNumberAlerta: { color: '#E53935' },
   cardLabel: {
     fontSize: 12,
     color: '#999',
@@ -306,6 +314,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cardLabelDestaque: { color: '#90CAF9' },
+  cardLabelAlerta: { color: '#E53935' },
   toggleFormButton: {
     marginHorizontal: 16,
     marginBottom: 8,
@@ -390,9 +399,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-  clearButton: {
-    padding: 6,
-  },
+  clearButton: { padding: 6 },
   clearButtonText: {
     color: '#999',
     fontSize: 14,
@@ -433,9 +440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  itemIconContainerAlerta: {
-    backgroundColor: '#FFEBEE',
-  },
+  itemIconContainerAlerta: { backgroundColor: '#FFEBEE' },
   itemIcon: { fontSize: 20 },
   itemInfo: { flex: 1 },
   itemNome: {
@@ -460,9 +465,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 48,
   },
-  qtdBadgeAlerta: {
-    backgroundColor: '#E53935',
-  },
+  qtdBadgeAlerta: { backgroundColor: '#E53935' },
   itemQtd: {
     fontSize: 16,
     color: '#fff',
