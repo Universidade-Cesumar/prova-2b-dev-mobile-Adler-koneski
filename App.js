@@ -5,7 +5,8 @@ import {
   Alert, RefreshControl, Platform
 } from 'react-native';
 
-const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/materiais';
+const API_MATERIAIS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/materiais';
+const API_USUARIOS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/usuarios';
 
 const getSaudacao = () => {
   const hora = new Date().getHours();
@@ -16,24 +17,110 @@ const getSaudacao = () => {
 
 const getDataFormatada = () => {
   return new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long', day: '2-digit', month: 'long'
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
   });
 };
 
 export default function App() {
+  // Autenticação
+  const [usuario, setUsuario] = useState(null);
+  const [telaAuth, setTelaAuth] = useState('login'); // 'login' ou 'cadastro'
+  const [authNome, setAuthNome] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authSenha, setAuthSenha] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Materiais
   const [materiais, setMateriais] = useState([]);
   const [nome, setNome] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [loading, setLoading] = useState(false);
   const [cadastrando, setCadastrando] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [formVisivel, setFormVisivel] = useState(true);
+  const [formVisivel, setFormVisivel] = useState(false);
   const [busca, setBusca] = useState('');
 
+  // ===== AUTENTICAÇÃO =====
+  const fazerLogin = async () => {
+    if (!authEmail.trim() || !authSenha.trim()) {
+      Alert.alert('Atenção', 'Preencha email e senha.');
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const response = await fetch(API_USUARIOS);
+      const data = await response.json();
+      const encontrado = data.find(
+        u => u.email === authEmail.trim() && u.senha === authSenha.trim()
+      );
+      if (encontrado) {
+        setUsuario(encontrado);
+        setAuthEmail('');
+        setAuthSenha('');
+      } else {
+        Alert.alert('Erro', 'Email ou senha inválidos.');
+      }
+    } catch (error) {
+      console.error('Erro no login:', error);
+      Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const fazerCadastro = async () => {
+    if (!authNome.trim() || !authEmail.trim() || !authSenha.trim()) {
+      Alert.alert('Atenção', 'Preencha todos os campos.');
+      return;
+    }
+    if (authSenha.length < 4) {
+      Alert.alert('Atenção', 'A senha deve ter pelo menos 4 caracteres.');
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      // Verifica se email já existe
+      const check = await fetch(API_USUARIOS);
+      const usuarios = await check.json();
+      if (usuarios.find(u => u.email === authEmail.trim())) {
+        Alert.alert('Erro', 'Este email já está cadastrado.');
+        setAuthLoading(false);
+        return;
+      }
+      // Cria usuário
+      const response = await fetch(API_USUARIOS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: authNome.trim(),
+          email: authEmail.trim(),
+          senha: authSenha.trim(),
+        }),
+      });
+      const novo = await response.json();
+      setUsuario(novo);
+      setAuthNome('');
+      setAuthEmail('');
+      setAuthSenha('');
+      Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      Alert.alert('Erro', 'Não foi possível realizar o cadastro.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const fazerLogout = () => {
+    setUsuario(null);
+    setTelaAuth('login');
+  };
+
+  // ===== MATERIAIS =====
   const buscarMateriais = async () => {
     setLoading(true);
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(API_MATERIAIS);
       const data = await response.json();
       setMateriais(data);
     } catch (error) {
@@ -47,7 +134,7 @@ export default function App() {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(API_MATERIAIS);
       const data = await response.json();
       setMateriais(data);
     } catch (error) {
@@ -59,17 +146,17 @@ export default function App() {
 
   const cadastrarMaterial = async () => {
     if (!nome.trim() || !quantidade.trim()) {
-      Alert.alert('Atenção', 'Preencha o nome e a quantidade!');
+      Alert.alert('Atenção', 'Preencha o nome e a quantidade.');
       return;
     }
     if (isNaN(Number(quantidade)) || Number(quantidade) <= 0) {
-      Alert.alert('Atenção', 'A quantidade deve ser um número maior que zero!');
+      Alert.alert('Atenção', 'A quantidade deve ser um número maior que zero.');
       return;
     }
 
     setCadastrando(true);
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(API_MATERIAIS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
@@ -79,7 +166,7 @@ export default function App() {
       setNome('');
       setQuantidade('');
       setFormVisivel(false);
-      Alert.alert('✅ Sucesso', `"${novo.nome}" cadastrado com ${novo.quantidade} unidades!`);
+      Alert.alert('Sucesso', `${novo.nome} cadastrado com ${novo.quantidade} unidades.`);
     } catch (error) {
       console.error('Erro ao cadastrar:', error);
       Alert.alert('Erro', 'Não foi possível cadastrar o material.');
@@ -89,75 +176,172 @@ export default function App() {
   };
 
   useEffect(() => {
-    buscarMateriais();
-  }, []);
+    if (usuario) {
+      buscarMateriais();
+    }
+  }, [usuario]);
 
   const totalUnidades = materiais.reduce(
     (acc, item) => acc + Number(item.quantidade || 0), 0
   );
 
+  const totalAlertas = materiais.filter(i => Number(i.quantidade) <= 20).length;
+
   const materiaisFiltrados = materiais
     .filter(item => item.nome.toLowerCase().includes(busca.toLowerCase()))
     .sort((a, b) => a.nome.localeCompare(b.nome));
 
-  return (
-    <View style={styles.safeArea}>
-      {Platform.OS !== 'web' && <StatusBar backgroundColor="#1565C0" barStyle="light-content" />}
+  // ===== TELA DE LOGIN/CADASTRO =====
+  if (!usuario) {
+    return (
+      <View style={styles.authContainer}>
+        <View style={styles.authCard}>
+          <Text style={styles.authBrand}>SISTEMA DE ALMOXARIFADO</Text>
+          <Text style={styles.authTitle}>
+            {telaAuth === 'login' ? 'Acesse sua conta' : 'Crie sua conta'}
+          </Text>
+          <Text style={styles.authSubtitle}>
+            {telaAuth === 'login'
+              ? 'Entre com suas credenciais para continuar'
+              : 'Preencha os dados para se cadastrar'}
+          </Text>
 
+          {telaAuth === 'cadastro' && (
+            <>
+              <Text style={styles.inputLabel}>Nome completo</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: Camila Silva"
+                placeholderTextColor="#9aa5b1"
+                value={authNome}
+                onChangeText={setAuthNome}
+              />
+            </>
+          )}
+
+          <Text style={styles.inputLabel}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="seu@email.com"
+            placeholderTextColor="#9aa5b1"
+            value={authEmail}
+            onChangeText={setAuthEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <Text style={styles.inputLabel}>Senha</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor="#9aa5b1"
+            value={authSenha}
+            onChangeText={setAuthSenha}
+            secureTextEntry
+          />
+
+          <TouchableOpacity
+            style={[styles.button, authLoading && styles.buttonDisabled]}
+            onPress={telaAuth === 'login' ? fazerLogin : fazerCadastro}
+            disabled={authLoading}
+          >
+            {authLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {telaAuth === 'login' ? 'ENTRAR' : 'CADASTRAR'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setTelaAuth(telaAuth === 'login' ? 'cadastro' : 'login')}
+            style={styles.authSwitch}
+          >
+            <Text style={styles.authSwitchText}>
+              {telaAuth === 'login'
+                ? 'Não tem conta? Cadastre-se'
+                : 'Já tem conta? Faça login'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // ===== TELA PRINCIPAL =====
+  return (
+    <View style={styles.container}>
       {/* Cabeçalho */}
       <View style={styles.header}>
-        <Text style={styles.headerIcon}>🏥</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Almoxarifado</Text>
-          <Text style={styles.headerSubtitle}>{getSaudacao()}, Camila 👋</Text>
-          <Text style={styles.headerSubtitle}>{getDataFormatada()}</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.headerBrand}>SISTEMA DE ALMOXARIFADO</Text>
+            <Text style={styles.headerTitle}>Controle de Insumos</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutButton} onPress={fazerLogout}>
+            <Text style={styles.logoutText}>Sair</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerSubtitle}>{getSaudacao()}, {usuario.nome}</Text>
+          <Text style={styles.headerDate}>{getDataFormatada()}</Text>
         </View>
       </View>
 
-      {/* Cards de resumo */}
-      <View style={styles.cardsRow}>
-        <View style={styles.card}>
-          <Text style={styles.cardNumber}>{materiais.length}</Text>
-          <Text style={styles.cardLabel}>Tipos de{'\n'}Material</Text>
-        </View>
-        <View style={[styles.card, styles.cardDestaque]}>
-          <Text style={[styles.cardNumber, styles.cardNumberDestaque]}>{totalUnidades}</Text>
-          <Text style={[styles.cardLabel, styles.cardLabelDestaque]}>Total de{'\n'}Unidades</Text>
-        </View>
-        <View style={[styles.card, styles.cardAlerta]}>
-          <Text style={[styles.cardNumber, styles.cardNumberAlerta]}>
-            {materiais.filter(i => Number(i.quantidade) <= 20).length}
-          </Text>
-          <Text style={[styles.cardLabel, styles.cardLabelAlerta]}>Estoque{'\n'}Baixo</Text>
+      {/* Indicadores */}
+      <View style={styles.indicadoresContainer}>
+        <Text style={styles.sectionLabel}>INDICADORES</Text>
+        <View style={styles.cardsRow}>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Tipos de material</Text>
+            <Text style={styles.cardNumber}>{materiais.length}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Total de unidades</Text>
+            <Text style={[styles.cardNumber, styles.cardNumberPrimary]}>{totalUnidades}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Estoque baixo</Text>
+            <Text style={[styles.cardNumber, totalAlertas > 0 && styles.cardNumberAlerta]}>
+              {totalAlertas}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Toggle formulário */}
-      <TouchableOpacity
-        style={styles.toggleFormButton}
-        onPress={() => setFormVisivel(!formVisivel)}
-      >
-        <Text style={styles.toggleFormText}>
-          {formVisivel ? '▲ Ocultar Formulário' : '▼ Novo Material'}
-        </Text>
-      </TouchableOpacity>
+      {!formVisivel && (
+        <TouchableOpacity
+          style={styles.novoButton}
+          onPress={() => setFormVisivel(true)}
+        >
+          <Text style={styles.novoButtonText}>+ NOVO MATERIAL</Text>
+        </TouchableOpacity>
+      )}
 
-      {/* Formulário de cadastro */}
       {formVisivel && (
         <View style={styles.form}>
+          <View style={styles.formHeader}>
+            <Text style={styles.formTitle}>Cadastrar Material</Text>
+            <TouchableOpacity onPress={() => setFormVisivel(false)}>
+              <Text style={styles.formClose}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.inputLabel}>Nome do material</Text>
           <TextInput
             testID="input-nome"
             style={styles.input}
-            placeholder="Nome do material (ex: Luva cirúrgica)"
-            placeholderTextColor="#aaa"
+            placeholder="Ex: Luva cirúrgica"
+            placeholderTextColor="#9aa5b1"
             value={nome}
             onChangeText={setNome}
           />
+          <Text style={styles.inputLabel}>Quantidade</Text>
           <TextInput
             testID="input-quantidade"
             style={styles.input}
-            placeholder="Quantidade"
-            placeholderTextColor="#aaa"
+            placeholder="Ex: 100"
+            placeholderTextColor="#9aa5b1"
             value={quantidade}
             onChangeText={setQuantidade}
             keyboardType="numeric"
@@ -171,41 +355,38 @@ export default function App() {
             {cadastrando ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>＋ Cadastrar Material</Text>
+              <Text style={styles.buttonText}>CADASTRAR</Text>
             )}
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Cabeçalho da lista */}
-      <View style={styles.subtitleRow}>
-        <Text style={styles.subtitle}>Estoque Atual</Text>
-        <TouchableOpacity onPress={buscarMateriais} style={styles.refreshButton}>
-          <Text style={styles.refreshText}>↻ Atualizar</Text>
+      <View style={styles.listHeader}>
+        <Text style={styles.sectionLabel}>INVENTÁRIO</Text>
+        <TouchableOpacity onPress={buscarMateriais}>
+          <Text style={styles.refreshLink}>Atualizar</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Campo de busca */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="🔍 Buscar material..."
-          placeholderTextColor="#aaa"
+          placeholder="Buscar material..."
+          placeholderTextColor="#9aa5b1"
           value={busca}
           onChangeText={setBusca}
         />
         {busca.length > 0 && (
           <TouchableOpacity onPress={() => setBusca('')} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>✕</Text>
+            <Text style={styles.clearButtonText}>limpar</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Lista de materiais */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1565C0" />
-          <Text style={styles.loadingText}>Carregando estoque...</Text>
+          <ActivityIndicator size="small" color="#1e3a5f" />
+          <Text style={styles.loadingText}>Carregando inventário</Text>
         </View>
       ) : (
         <FlatList
@@ -216,41 +397,42 @@ export default function App() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#1565C0']}
+              colors={['#1e3a5f']}
             />
           }
           renderItem={({ item }) => {
             const estoqueBaixo = Number(item.quantidade) <= 20;
             return (
-              <View style={[styles.item, estoqueBaixo && styles.itemAlerta]}>
-                <View style={[styles.itemIconContainer, estoqueBaixo && styles.itemIconContainerAlerta]}>
-                  <Text style={styles.itemIcon}>{estoqueBaixo ? '⚠️' : '💊'}</Text>
-                </View>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemNome}>{item.nome}</Text>
-                  <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
-                    {estoqueBaixo ? '⚠️ Estoque baixo!' : 'Material de consumo'}
-                  </Text>
-                </View>
-                <View style={[styles.qtdBadge, estoqueBaixo && styles.qtdBadgeAlerta]}>
-                  <Text style={styles.itemQtd}>{item.quantidade}</Text>
-                  <Text style={styles.qtdLabel}>un</Text>
+              <View style={styles.item}>
+                {estoqueBaixo && <View style={styles.itemAccent} />}
+                <View style={styles.itemContent}>
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.itemNome}>{item.nome}</Text>
+                    <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
+                      {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
+                    </Text>
+                  </View>
+                  <View style={styles.itemRight}>
+                    <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
+                      {item.quantidade}
+                    </Text>
+                    <Text style={styles.itemQtdLabel}>unidades</Text>
+                  </View>
                 </View>
               </View>
             );
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>📦</Text>
               <Text style={styles.emptyText}>
-                {busca.length > 0 ? 'Nenhum material encontrado.' : 'Nenhum material cadastrado.'}
+                {busca.length > 0 ? 'Nenhum resultado encontrado' : 'Inventário vazio'}
               </Text>
               <Text style={styles.emptySubText}>
-                {busca.length > 0 ? `Sem resultados para "${busca}"` : 'Use o formulário acima para adicionar.'}
+                {busca.length > 0 ? `Sem correspondência para "${busca}"` : 'Cadastre o primeiro material para iniciar'}
               </Text>
             </View>
           }
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 24 }}
         />
       )}
     </View>
@@ -258,151 +440,257 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  // Auth
+  authContainer: {
     flex: 1,
-    backgroundColor: '#f5f7fa',
+    backgroundColor: '#1e3a5f',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  authCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 32,
+    width: '100%',
+    maxWidth: 420,
+  },
+  authBrand: {
+    fontSize: 10,
+    color: '#7fa3c9',
+    letterSpacing: 2,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  authTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1e293b',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  authSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  authSwitch: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  authSwitchText: {
+    fontSize: 13,
+    color: '#1e3a5f',
+    fontWeight: '500',
+  },
+
+  // Container principal
+  container: {
+    flex: 1,
+    backgroundColor: '#f4f6f8',
   },
   header: {
-    backgroundColor: '#1565C0',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    backgroundColor: '#1e3a5f',
+    paddingTop: Platform.OS === 'web' ? 24 : 48,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
   },
-  headerIcon: { fontSize: 32 },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  headerBrand: {
+    fontSize: 10,
+    color: '#7fa3c9',
+    letterSpacing: 2,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#fff',
+    letterSpacing: -0.3,
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  headerInfo: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    paddingTop: 12,
   },
   headerSubtitle: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  headerDate: {
     fontSize: 12,
-    color: '#90CAF9',
+    color: '#a8c0d6',
+    textTransform: 'capitalize',
+  },
+  indicadoresContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    color: '#64748b',
+    letterSpacing: 1.5,
+    fontWeight: '600',
+    marginBottom: 12,
   },
   cardsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 16,
     gap: 12,
-    marginBottom: 8,
   },
   card: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  cardDestaque: { backgroundColor: '#1565C0' },
-  cardAlerta: { backgroundColor: '#FFEBEE' },
-  cardNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1565C0',
-  },
-  cardNumberDestaque: { color: '#fff' },
-  cardNumberAlerta: { color: '#E53935' },
   cardLabel: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  cardLabelDestaque: { color: '#90CAF9' },
-  cardLabelAlerta: { color: '#E53935' },
-  toggleFormButton: {
-    marginHorizontal: 16,
+    fontSize: 11,
+    color: '#64748b',
     marginBottom: 8,
-    paddingVertical: 8,
+    fontWeight: '500',
+  },
+  cardNumber: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1e293b',
+    letterSpacing: -0.5,
+  },
+  cardNumberPrimary: { color: '#1e3a5f' },
+  cardNumberAlerta: { color: '#c2410c' },
+  novoButton: {
+    marginHorizontal: 24,
+    marginVertical: 16,
+    backgroundColor: '#1e3a5f',
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  toggleFormText: {
-    color: '#1565C0',
-    fontWeight: 'bold',
-    fontSize: 14,
+  novoButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
   },
   form: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  input: {
+    marginHorizontal: 24,
+    marginVertical: 16,
+    borderRadius: 8,
+    padding: 20,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    fontSize: 15,
-    backgroundColor: '#fafafa',
-    color: '#333',
+    borderColor: '#e2e8f0',
   },
-  button: {
-    backgroundColor: '#1565C0',
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonDisabled: { backgroundColor: '#90CAF9' },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  subtitleRow: {
+  formHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-  subtitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#333',
+  formTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1e293b',
   },
-  refreshButton: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  refreshText: {
-    color: '#1565C0',
-    fontWeight: 'bold',
+  formClose: {
     fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  inputLabel: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+    fontSize: 14,
+    backgroundColor: '#fff',
+    color: '#1e293b',
+  },
+  button: {
+    backgroundColor: '#1e3a5f',
+    paddingVertical: 13,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  buttonDisabled: { backgroundColor: '#94a3b8' },
+  buttonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    marginBottom: 12,
+  },
+  refreshLink: {
+    fontSize: 12,
+    color: '#1e3a5f',
+    fontWeight: '600',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 10,
+    marginHorizontal: 24,
+    marginBottom: 12,
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#cbd5e1',
     paddingHorizontal: 12,
   },
   searchInput: {
     flex: 1,
-    padding: 10,
-    fontSize: 14,
-    color: '#333',
+    paddingVertical: 10,
+    fontSize: 13,
+    color: '#1e293b',
   },
-  clearButton: { padding: 6 },
+  clearButton: { paddingHorizontal: 8 },
   clearButtonText: {
-    color: '#999',
-    fontSize: 14,
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -410,84 +698,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
-    color: '#999',
-    fontSize: 14,
+    marginTop: 8,
+    color: '#64748b',
+    fontSize: 12,
   },
   item: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
+    marginHorizontal: 24,
+    marginBottom: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  itemAccent: {
+    width: 3,
+    backgroundColor: '#c2410c',
+  },
+  itemContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  itemAlerta: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#E53935',
-  },
-  itemIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e3f2fd',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  itemIconContainerAlerta: { backgroundColor: '#FFEBEE' },
-  itemIcon: { fontSize: 20 },
   itemInfo: { flex: 1 },
   itemNome: {
-    fontSize: 15,
-    color: '#333',
-    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#1e293b',
+    fontWeight: '600',
+    marginBottom: 2,
   },
   itemLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '500',
   },
   itemLabelAlerta: {
-    color: '#E53935',
-    fontWeight: 'bold',
+    color: '#c2410c',
+    fontWeight: '600',
   },
-  qtdBadge: {
-    backgroundColor: '#1565C0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: 'center',
-    minWidth: 48,
-  },
-  qtdBadgeAlerta: { backgroundColor: '#E53935' },
+  itemRight: { alignItems: 'flex-end' },
   itemQtd: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#1e3a5f',
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
-  qtdLabel: {
+  itemQtdAlerta: { color: '#c2410c' },
+  itemQtdLabel: {
     fontSize: 10,
-    color: '#90CAF9',
+    color: '#94a3b8',
+    fontWeight: '500',
+    marginTop: -2,
   },
   emptyContainer: {
     alignItems: 'center',
     marginTop: 40,
+    paddingHorizontal: 24,
   },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
-    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#475569',
+    fontWeight: '600',
+    marginBottom: 4,
   },
   emptySubText: {
-    fontSize: 13,
-    color: '#bbb',
-    marginTop: 4,
+    fontSize: 12,
+    color: '#94a3b8',
   },
 });
