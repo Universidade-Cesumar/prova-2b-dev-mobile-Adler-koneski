@@ -90,7 +90,10 @@ export default function App() {
         )}
       </TouchableOpacity>
 
-      <Text style={styles.subtitle}>Estoque Atual</Text>
+      <View style={styles.subtitleRow}>
+        <Text style={styles.subtitle}>Estoque Atual</Text>
+        <Text style={styles.contador}>{materiais.length} itens</Text>
+      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#2196F3" />
@@ -134,11 +137,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     color: '#333',
   },
+  subtitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   subtitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
     color: '#333',
+  },
+  contador: {
+    fontSize: 14,
+    color: '#2196F3',
+    fontWeight: 'bold',
   },
   input: {
     borderWidth: 1,
