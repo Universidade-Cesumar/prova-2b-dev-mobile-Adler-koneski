@@ -92,7 +92,12 @@ export default function App() {
 
       <View style={styles.subtitleRow}>
         <Text style={styles.subtitle}>Estoque Atual</Text>
-        <Text style={styles.contador}>{materiais.length} itens</Text>
+        <View style={styles.subtitleActions}>
+          <Text style={styles.contador}>{materiais.length} itens  </Text>
+          <TouchableOpacity onPress={buscarMateriais} style={styles.refreshButton}>
+            <Text style={styles.refreshText}>↻ Atualizar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
@@ -143,6 +148,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  subtitleActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   subtitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -152,6 +161,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2196F3',
     fontWeight: 'bold',
+  },
+  refreshButton: {
+    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  refreshText: {
+    color: '#2196F3',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
   input: {
     borderWidth: 1,
