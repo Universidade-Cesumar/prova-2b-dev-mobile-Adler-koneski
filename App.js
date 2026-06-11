@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput,
   TouchableOpacity, FlatList, ActivityIndicator,
-  Alert, RefreshControl, SafeAreaView, StatusBar
+  Alert, RefreshControl, StatusBar
 } from 'react-native';
 
-// URL base da API no MockAPI
 const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
 
-// Retorna saudação baseada no horário
 const getSaudacao = () => {
   const hora = new Date().getHours();
   if (hora < 12) return 'Bom dia';
@@ -16,7 +14,6 @@ const getSaudacao = () => {
   return 'Boa noite';
 };
 
-// Retorna a data formatada em português
 const getDataFormatada = () => {
   return new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long'
@@ -24,16 +21,15 @@ const getDataFormatada = () => {
 };
 
 export default function App() {
-  // Estados principais da aplicação
-  const [materiais, setMateriais] = useState([]);        // lista de materiais do estoque
-  const [nome, setNome] = useState('');                  // campo nome do formulário
-  const [quantidade, setQuantidade] = useState('');      // campo quantidade do formulário
-  const [loading, setLoading] = useState(false);         // loading da lista
-  const [cadastrando, setCadastrando] = useState(false); // loading do botão cadastrar
-  const [refreshing, setRefreshing] = useState(false);   // pull to refresh
-  const [formVisivel, setFormVisivel] = useState(true);  // toggle do formulário
+  const [materiais, setMateriais] = useState([]);
+  const [nome, setNome] = useState('');
+  const [quantidade, setQuantidade] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [cadastrando, setCadastrando] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [formVisivel, setFormVisivel] = useState(true);
+  const [busca, setBusca] = useState('');
 
-  // Busca todos os materiais na API (GET)
   const buscarMateriais = async () => {
     setLoading(true);
     try {
@@ -48,7 +44,6 @@ export default function App() {
     }
   };
 
-  // Atualiza a lista via pull to refresh
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -62,9 +57,7 @@ export default function App() {
     }
   };
 
-  // Cadastra um novo material na API (POST)
   const cadastrarMaterial = async () => {
-    // Validações do formulário
     if (!nome.trim() || !quantidade.trim()) {
       Alert.alert('Atenção', 'Preencha o nome e a quantidade!');
       return;
@@ -82,8 +75,6 @@ export default function App() {
         body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
       });
       const novo = await response.json();
-
-      // Atualiza a lista localmente sem precisar buscar tudo de novo
       setMateriais((prev) => [...prev, novo]);
       setNome('');
       setQuantidade('');
@@ -97,31 +88,34 @@ export default function App() {
     }
   };
 
-  // Busca os materiais ao abrir o app
   useEffect(() => {
     buscarMateriais();
   }, []);
 
-  // Calcula o total de unidades em estoque
   const totalUnidades = materiais.reduce(
     (acc, item) => acc + Number(item.quantidade || 0), 0
   );
 
+  // Filtra materiais pelo campo de busca
+  const materiaisFiltrados = materiais.filter(item =>
+    item.nome.toLowerCase().includes(busca.toLowerCase())
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar backgroundColor="#1565C0" barStyle="light-content" />
 
-     {/* Cabeçalho */}
-     <View style={styles.header}>
-         <Text style={styles.headerIcon}>🏥</Text>
-          <View style={{flex: 1}}>
+      {/* Cabeçalho */}
+      <View style={styles.header}>
+        <Text style={styles.headerIcon}>🏥</Text>
+        <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Almoxarifado</Text>
           <Text style={styles.headerSubtitle}>{getSaudacao()}, Camila 👋</Text>
           <Text style={styles.headerSubtitle}>{getDataFormatada()}</Text>
         </View>
       </View>
 
-      {/* Cards de resumo do estoque */}
+      {/* Cards de resumo */}
       <View style={styles.cardsRow}>
         <View style={styles.card}>
           <Text style={styles.cardNumber}>{materiais.length}</Text>
@@ -133,7 +127,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* Botão para mostrar/esconder formulário */}
+      {/* Toggle formulário */}
       <TouchableOpacity
         style={styles.toggleFormButton}
         onPress={() => setFormVisivel(!formVisivel)}
@@ -178,12 +172,28 @@ export default function App() {
         </View>
       )}
 
-      {/* Título da lista com botão de atualizar */}
+      {/* Cabeçalho da lista com busca */}
       <View style={styles.subtitleRow}>
         <Text style={styles.subtitle}>Estoque Atual</Text>
         <TouchableOpacity onPress={buscarMateriais} style={styles.refreshButton}>
           <Text style={styles.refreshText}>↻ Atualizar</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Campo de busca */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="🔍 Buscar material..."
+          placeholderTextColor="#aaa"
+          value={busca}
+          onChangeText={setBusca}
+        />
+        {busca.length > 0 && (
+          <TouchableOpacity onPress={() => setBusca('')} style={styles.clearButton}>
+            <Text style={styles.clearButtonText}>✕</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Lista de materiais */}
@@ -195,7 +205,7 @@ export default function App() {
       ) : (
         <FlatList
           testID="lista-materiais"
-          data={materiais}
+          data={materiaisFiltrados}
           keyExtractor={(item) => item.id}
           refreshControl={
             <RefreshControl
@@ -222,14 +232,18 @@ export default function App() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>📦</Text>
-              <Text style={styles.emptyText}>Nenhum material cadastrado.</Text>
-              <Text style={styles.emptySubText}>Use o formulário acima para adicionar.</Text>
+              <Text style={styles.emptyText}>
+                {busca.length > 0 ? 'Nenhum material encontrado.' : 'Nenhum material cadastrado.'}
+              </Text>
+              <Text style={styles.emptySubText}>
+                {busca.length > 0 ? `Sem resultados para "${busca}"` : 'Use o formulário acima para adicionar.'}
+              </Text>
             </View>
           }
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -355,6 +369,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 13,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 10,
+    fontSize: 14,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 6,
+  },
+  clearButtonText: {
+    color: '#999',
+    fontSize: 14,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -420,10 +458,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: {
     fontSize: 16,
     color: '#999',
