@@ -15,10 +15,28 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Almoxarifado - Enfermagem</Text>
-      <Text style={styles.description}>
-        Sistema de controle de insumos médicos. Cadastre e visualize
-        os materiais do estoque em tempo real.
-      </Text>
+
+      <TextInput
+        testID="input-nome"
+        style={styles.input}
+        placeholder="Nome do material"
+        value={nome}
+        onChangeText={setNome}
+      />
+
+      <TextInput
+        testID="input-quantidade"
+        style={styles.input}
+        placeholder="Quantidade"
+        value={quantidade}
+        onChangeText={setQuantidade}
+        keyboardType="numeric"
+      />
+
+      <TouchableOpacity testID="btn-cadastrar" style={styles.button}>
+        <Text style={styles.buttonText}>Cadastrar</Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
@@ -34,14 +52,27 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 20,
     color: '#333',
   },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 30,
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: '#2196F3',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
