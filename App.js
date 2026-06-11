@@ -37,6 +37,26 @@ export default function App() {
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>
 
+      <Text style={styles.subtitle}>Estoque Atual</Text>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#2196F3" />
+      ) : (
+        <FlatList
+          testID="lista-materiais"
+          data={materiais}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.item}>
+              <Text style={styles.itemNome}>{item.nome}</Text>
+              <Text style={styles.itemQtd}>Qtd: {item.quantidade}</Text>
+            </View>
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Nenhum material cadastrado.</Text>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -53,6 +73,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,
+    color: '#333',
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
     color: '#333',
   },
   input: {
@@ -74,5 +100,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  item: {
+    backgroundColor: '#f0f0f0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  itemNome: {
+    fontSize: 16,
+    color: '#333',
+  },
+  itemQtd: {
+    fontSize: 16,
+    color: '#2196F3',
+    fontWeight: 'bold',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 20,
   },
 });
