@@ -12,6 +12,23 @@ export default function App() {
   const [quantidade, setQuantidade] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const buscarMateriais = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setMateriais(data);
+    } catch (error) {
+      console.error('Erro ao buscar materiais:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    buscarMateriais();
+  }, []);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Almoxarifado - Enfermagem</Text>
