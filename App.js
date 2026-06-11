@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import {
+  StyleSheet, Text, View, TextInput,
+  TouchableOpacity, FlatList, ActivityIndicator
+} from 'react-native';
+
+const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
 
 export default function App() {
-  // --- Estados da Aplicação (Os alunos implementarão aqui) ---
-
-  // --- Funções de Requisição e Efeitos (Os alunos implementarão aqui) ---
+  const [materiais, setMateriais] = useState([]);
+  const [nome, setNome] = useState('');
+  const [quantidade, setQuantidade] = useState('');
+  const [loading, setLoading] = useState(false);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Almoxarifado - Enfermagem</Text>
-      
-      {/* Breve descrição do projeto inserida abaixo */}
       <Text style={styles.description}>
-        Este template servirá para desenvolver o projeto responsável por modernizar o controle de insumos médicos do almoxarifado. 
-        Através desta interface conectada à API, é possível realizar o inventário em tempo real, cadastrar novos materiais e registrar baixas de estoque de forma ágil e segura.
+        Sistema de controle de insumos médicos. Cadastre e visualize
+        os materiais do estoque em tempo real.
       </Text>
-
-      {/* Os alunos vão construir os componentes visuais das Sprints aqui dentro */}
-      
     </View>
   );
 }
@@ -33,14 +34,14 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 10, // Reduzido ligeiramente para aproximar o texto explicativo
+    marginBottom: 10,
     color: '#333',
   },
   description: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 20, // Dá um espaçamento confortável entre as linhas do parágrafo
-    marginBottom: 30, // Margem inferior para afastar o texto dos futuros inputs dos alunos
-  }
+    lineHeight: 20,
+    marginBottom: 30,
+  },
 });
