@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput,
-  TouchableOpacity, FlatList, ActivityIndicator, Alert, RefreshControl
+  TouchableOpacity, FlatList, ActivityIndicator,
+  Alert, RefreshControl, SafeAreaView, StatusBar
 } from 'react-native';
 
 const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
@@ -13,6 +14,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [cadastrando, setCadastrando] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [formVisivel, setFormVisivel] = useState(true);
 
   const buscarMateriais = async () => {
     setLoading(true);
@@ -22,6 +24,7 @@ export default function App() {
       setMateriais(data);
     } catch (error) {
       console.error('Erro ao buscar materiais:', error);
+      Alert.alert('Erro', 'Não foi possível carregar o estoque.');
     } finally {
       setLoading(false);
     }
@@ -41,8 +44,12 @@ export default function App() {
   };
 
   const cadastrarMaterial = async () => {
-    if (!nome || !quantidade) {
+    if (!nome.trim() || !quantidade.trim()) {
       Alert.alert('Atenção', 'Preencha o nome e a quantidade!');
+      return;
+    }
+    if (isNaN(Number(quantidade)) || Number(quantidade) <= 0) {
+      Alert.alert('Atenção', 'A quantidade deve ser um número maior que zero!');
       return;
     }
 
@@ -51,13 +58,14 @@ export default function App() {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, quantidade: Number(quantidade) }),
+        body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
       });
       const novo = await response.json();
       setMateriais((prev) => [...prev, novo]);
       setNome('');
       setQuantidade('');
-      Alert.alert('Sucesso', 'Material cadastrado!');
+      setFormVisivel(false);
+      Alert.alert('✅ Sucesso', `"${novo.nome}" cadastrado com ${novo.quantidade} unidades!`);
     } catch (error) {
       console.error('Erro ao cadastrar:', error);
       Alert.alert('Erro', 'Não foi possível cadastrar o material.');
@@ -70,65 +78,108 @@ export default function App() {
     buscarMateriais();
   }, []);
 
+  const totalUnidades = materiais.reduce((acc, item) => acc + Number(item.quantidade || 0), 0);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Almoxarifado - Enfermagem</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar backgroundColor="#1565C0" barStyle="light-content" />
 
-      <TextInput
-        testID="input-nome"
-        style={styles.input}
-        placeholder="Nome do material"
-        value={nome}
-        onChangeText={setNome}
-      />
-
-      <TextInput
-        testID="input-quantidade"
-        style={styles.input}
-        placeholder="Quantidade"
-        value={quantidade}
-        onChangeText={setQuantidade}
-        keyboardType="numeric"
-      />
-
-      <TouchableOpacity
-        testID="btn-cadastrar"
-        style={[styles.button, cadastrando && styles.buttonDisabled]}
-        onPress={cadastrarMaterial}
-        disabled={cadastrando}
-      >
-        {cadastrando ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Cadastrar</Text>
-        )}
-      </TouchableOpacity>
-
-      <View style={styles.subtitleRow}>
-        <Text style={styles.subtitle}>Estoque Atual</Text>
-        <View style={styles.subtitleActions}>
-          <Text style={styles.contador}>{materiais.length} itens  </Text>
-          <TouchableOpacity onPress={buscarMateriais} style={styles.refreshButton}>
-            <Text style={styles.refreshText}>↻ Atualizar</Text>
-          </TouchableOpacity>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerIcon}>🏥</Text>
+        <View>
+          <Text style={styles.headerTitle}>Almoxarifado</Text>
+          <Text style={styles.headerSubtitle}>Curso Técnico de Enfermagem</Text>
         </View>
       </View>
 
+      {/* Cards de resumo */}
+      <View style={styles.cardsRow}>
+        <View style={styles.card}>
+          <Text style={styles.cardNumber}>{materiais.length}</Text>
+          <Text style={styles.cardLabel}>Tipos de{'\n'}Material</Text>
+        </View>
+        <View style={[styles.card, styles.cardDestaque]}>
+          <Text style={[styles.cardNumber, styles.cardNumberDestaque]}>{totalUnidades}</Text>
+          <Text style={[styles.cardLabel, styles.cardLabelDestaque]}>Total de{'\n'}Unidades</Text>
+        </View>
+      </View>
+
+      {/* Botão toggle formulário */}
+      <TouchableOpacity
+        style={styles.toggleFormButton}
+        onPress={() => setFormVisivel(!formVisivel)}
+      >
+        <Text style={styles.toggleFormText}>
+          {formVisivel ? '▲ Ocultar Formulário' : '▼ Novo Material'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Formulário */}
+      {formVisivel && (
+        <View style={styles.form}>
+          <TextInput
+            testID="input-nome"
+            style={styles.input}
+            placeholder="Nome do material (ex: Luva cirúrgica)"
+            placeholderTextColor="#aaa"
+            value={nome}
+            onChangeText={setNome}
+          />
+          <TextInput
+            testID="input-quantidade"
+            style={styles.input}
+            placeholder="Quantidade"
+            placeholderTextColor="#aaa"
+            value={quantidade}
+            onChangeText={setQuantidade}
+            keyboardType="numeric"
+          />
+          <TouchableOpacity
+            testID="btn-cadastrar"
+            style={[styles.button, cadastrando && styles.buttonDisabled]}
+            onPress={cadastrarMaterial}
+            disabled={cadastrando}
+          >
+            {cadastrando ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>＋ Cadastrar Material</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Cabeçalho da lista */}
+      <View style={styles.subtitleRow}>
+        <Text style={styles.subtitle}>Estoque Atual</Text>
+        <TouchableOpacity onPress={buscarMateriais} style={styles.refreshButton}>
+          <Text style={styles.refreshText}>↻ Atualizar</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Lista */}
       {loading ? (
-        <ActivityIndicator size="large" color="#2196F3" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1565C0" />
+          <Text style={styles.loadingText}>Carregando estoque...</Text>
+        </View>
       ) : (
         <FlatList
           testID="lista-materiais"
           data={materiais}
           keyExtractor={(item) => item.id}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2196F3']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1565C0']} />
           }
           renderItem={({ item }) => (
             <View style={styles.item}>
-              <View>
+              <View style={styles.itemIconContainer}>
+                <Text style={styles.itemIcon}>💊</Text>
+              </View>
+              <View style={styles.itemInfo}>
                 <Text style={styles.itemNome}>{item.nome}</Text>
-                <Text style={styles.itemLabel}>Material de estoque</Text>
+                <Text style={styles.itemLabel}>Material de consumo</Text>
               </View>
               <View style={styles.qtdBadge}>
                 <Text style={styles.itemQtd}>{item.quantidade}</Text>
@@ -137,73 +188,119 @@ export default function App() {
             </View>
           )}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>Nenhum material cadastrado.</Text>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>📦</Text>
+              <Text style={styles.emptyText}>Nenhum material cadastrado.</Text>
+              <Text style={styles.emptySubText}>Use o formulário acima para adicionar.</Text>
+            </View>
           }
+          contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f7fa',
+  },
+  header: {
+    backgroundColor: '#1565C0',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerIcon: {
+    fontSize: 32,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#90CAF9',
+  },
+  cardsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: 12,
+    marginBottom: 8,
+  },
+  card: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingHorizontal: 20,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
-  title: {
-    fontSize: 22,
+  cardDestaque: {
+    backgroundColor: '#1565C0',
+  },
+  cardNumber: {
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#1565C0',
+  },
+  cardNumberDestaque: {
+    color: '#fff',
+  },
+  cardLabel: {
+    fontSize: 12,
+    color: '#999',
     textAlign: 'center',
-    marginBottom: 20,
-    color: '#333',
+    marginTop: 4,
   },
-  subtitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  cardLabelDestaque: {
+    color: '#90CAF9',
   },
-  subtitleActions: {
-    flexDirection: 'row',
+  toggleFormButton: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 8,
     alignItems: 'center',
   },
-  subtitle: {
-    fontSize: 18,
+  toggleFormText: {
+    color: '#1565C0',
     fontWeight: 'bold',
-    color: '#333',
-  },
-  contador: {
     fontSize: 14,
-    color: '#2196F3',
-    fontWeight: 'bold',
   },
-  refreshButton: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  refreshText: {
-    color: '#2196F3',
-    fontWeight: 'bold',
-    fontSize: 13,
+  form: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     marginBottom: 12,
-    fontSize: 16,
+    fontSize: 15,
+    backgroundColor: '#fafafa',
+    color: '#333',
   },
   button: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#1565C0',
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 20,
   },
   buttonDisabled: {
     backgroundColor: '#90CAF9',
@@ -213,17 +310,69 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  item: {
-    backgroundColor: '#f0f0f0',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+  subtitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  refreshButton: {
+    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  refreshText: {
+    color: '#1565C0',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#999',
+    fontSize: 14,
+  },
+  item: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+  },
+  itemIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e3f2fd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  itemIcon: {
+    fontSize: 20,
+  },
+  itemInfo: {
+    flex: 1,
   },
   itemNome: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#333',
     fontWeight: 'bold',
   },
@@ -233,11 +382,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   qtdBadge: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#1565C0',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     alignItems: 'center',
+    minWidth: 48,
   },
   itemQtd: {
     fontSize: 16,
@@ -246,11 +396,24 @@ const styles = StyleSheet.create({
   },
   qtdLabel: {
     fontSize: 10,
-    color: '#fff',
+    color: '#90CAF9',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 12,
   },
   emptyText: {
-    textAlign: 'center',
+    fontSize: 16,
     color: '#999',
-    marginTop: 20,
+    fontWeight: 'bold',
+  },
+  emptySubText: {
+    fontSize: 13,
+    color: '#bbb',
+    marginTop: 4,
   },
 });
