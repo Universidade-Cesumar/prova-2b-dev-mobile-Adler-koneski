@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput,
   TouchableOpacity, FlatList, ActivityIndicator,
-  Alert, RefreshControl, StatusBar
+  Alert, RefreshControl, Platform
 } from 'react-native';
 
-const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
+const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/materiais';
 
 const getSaudacao = () => {
   const hora = new Date().getHours();
@@ -102,7 +102,7 @@ export default function App() {
 
   return (
     <View style={styles.safeArea}>
-      <StatusBar backgroundColor="#1565C0" barStyle="light-content" />
+      {Platform.OS !== 'web' && <StatusBar backgroundColor="#1565C0" barStyle="light-content" />}
 
       {/* Cabeçalho */}
       <View style={styles.header}>
@@ -177,7 +177,7 @@ export default function App() {
         </View>
       )}
 
-      {/* Cabeçalho da lista com busca */}
+      {/* Cabeçalho da lista */}
       <View style={styles.subtitleRow}>
         <Text style={styles.subtitle}>Estoque Atual</Text>
         <TouchableOpacity onPress={buscarMateriais} style={styles.refreshButton}>
