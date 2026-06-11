@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput,
-  TouchableOpacity, FlatList, ActivityIndicator
+  TouchableOpacity, FlatList, ActivityIndicator, Alert
 } from 'react-native';
 
 const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
@@ -22,6 +22,29 @@ export default function App() {
       console.error('Erro ao buscar materiais:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cadastrarMaterial = async () => {
+    if (!nome || !quantidade) {
+      Alert.alert('Atenção', 'Preencha o nome e a quantidade!');
+      return;
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, quantidade: Number(quantidade) }),
+      });
+      const novo = await response.json();
+      setMateriais((prev) => [...prev, novo]);
+      setNome('');
+      setQuantidade('');
+      Alert.alert('Sucesso', 'Material cadastrado!');
+    } catch (error) {
+      console.error('Erro ao cadastrar:', error);
+      Alert.alert('Erro', 'Não foi possível cadastrar o material.');
     }
   };
 
@@ -50,7 +73,7 @@ export default function App() {
         keyboardType="numeric"
       />
 
-      <TouchableOpacity testID="btn-cadastrar" style={styles.button}>
+      <TouchableOpacity testID="btn-cadastrar" style={styles.button} onPress={cadastrarMaterial}>
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>
 
