@@ -101,8 +101,14 @@ export default function App() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.item}>
-              <Text style={styles.itemNome}>{item.nome}</Text>
-              <Text style={styles.itemQtd}>Qtd: {item.quantidade}</Text>
+              <View>
+                <Text style={styles.itemNome}>{item.nome}</Text>
+                <Text style={styles.itemLabel}>Material de estoque</Text>
+              </View>
+              <View style={styles.qtdBadge}>
+                <Text style={styles.itemQtd}>{item.quantidade}</Text>
+                <Text style={styles.qtdLabel}>un</Text>
+              </View>
             </View>
           )}
           ListEmptyComponent={
@@ -164,15 +170,33 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   itemNome: {
     fontSize: 16,
     color: '#333',
+    fontWeight: 'bold',
+  },
+  itemLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  qtdBadge: {
+    backgroundColor: '#2196F3',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
   },
   itemQtd: {
     fontSize: 16,
-    color: '#2196F3',
+    color: '#fff',
     fontWeight: 'bold',
+  },
+  qtdLabel: {
+    fontSize: 10,
+    color: '#fff',
   },
   emptyText: {
     textAlign: 'center',
