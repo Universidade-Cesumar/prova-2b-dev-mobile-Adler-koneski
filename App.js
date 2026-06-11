@@ -96,7 +96,6 @@ export default function App() {
     (acc, item) => acc + Number(item.quantidade || 0), 0
   );
 
-   // Filtra materiais pelo campo de busca
   const materiaisFiltrados = materiais
     .filter(item => item.nome.toLowerCase().includes(busca.toLowerCase()))
     .sort((a, b) => a.nome.localeCompare(b.nome));
@@ -214,21 +213,26 @@ export default function App() {
               colors={['#1565C0']}
             />
           }
-          renderItem={({ item }) => (
-            <View style={styles.item}>
-              <View style={styles.itemIconContainer}>
-                <Text style={styles.itemIcon}>💊</Text>
+          renderItem={({ item }) => {
+            const estoqueBaixo = Number(item.quantidade) <= 20;
+            return (
+              <View style={[styles.item, estoqueBaixo && styles.itemAlerta]}>
+                <View style={[styles.itemIconContainer, estoqueBaixo && styles.itemIconContainerAlerta]}>
+                  <Text style={styles.itemIcon}>{estoqueBaixo ? '⚠️' : '💊'}</Text>
+                </View>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemNome}>{item.nome}</Text>
+                  <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
+                    {estoqueBaixo ? '⚠️ Estoque baixo!' : 'Material de consumo'}
+                  </Text>
+                </View>
+                <View style={[styles.qtdBadge, estoqueBaixo && styles.qtdBadgeAlerta]}>
+                  <Text style={styles.itemQtd}>{item.quantidade}</Text>
+                  <Text style={styles.qtdLabel}>un</Text>
+                </View>
               </View>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemNome}>{item.nome}</Text>
-                <Text style={styles.itemLabel}>Material de consumo</Text>
-              </View>
-              <View style={styles.qtdBadge}>
-                <Text style={styles.itemQtd}>{item.quantidade}</Text>
-                <Text style={styles.qtdLabel}>un</Text>
-              </View>
-            </View>
-          )}
+            );
+          }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>📦</Text>
@@ -416,6 +420,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
   },
+  itemAlerta: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#E53935',
+  },
   itemIconContainer: {
     width: 40,
     height: 40,
@@ -424,6 +432,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  itemIconContainerAlerta: {
+    backgroundColor: '#FFEBEE',
   },
   itemIcon: { fontSize: 20 },
   itemInfo: { flex: 1 },
@@ -437,6 +448,10 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 2,
   },
+  itemLabelAlerta: {
+    color: '#E53935',
+    fontWeight: 'bold',
+  },
   qtdBadge: {
     backgroundColor: '#1565C0',
     borderRadius: 8,
@@ -444,6 +459,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     alignItems: 'center',
     minWidth: 48,
+  },
+  qtdBadgeAlerta: {
+    backgroundColor: '#E53935',
   },
   itemQtd: {
     fontSize: 16,
