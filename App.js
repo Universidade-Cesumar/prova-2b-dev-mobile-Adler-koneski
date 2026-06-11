@@ -5,17 +5,20 @@ import {
   Alert, RefreshControl, SafeAreaView, StatusBar
 } from 'react-native';
 
+// URL base da API no MockAPI
 const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
 
 export default function App() {
-  const [materiais, setMateriais] = useState([]);
-  const [nome, setNome] = useState('');
-  const [quantidade, setQuantidade] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [cadastrando, setCadastrando] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [formVisivel, setFormVisivel] = useState(true);
+  // Estados principais da aplicação
+  const [materiais, setMateriais] = useState([]);        // lista de materiais do estoque
+  const [nome, setNome] = useState('');                  // campo nome do formulário
+  const [quantidade, setQuantidade] = useState('');      // campo quantidade do formulário
+  const [loading, setLoading] = useState(false);         // loading da lista
+  const [cadastrando, setCadastrando] = useState(false); // loading do botão cadastrar
+  const [refreshing, setRefreshing] = useState(false);   // pull to refresh
+  const [formVisivel, setFormVisivel] = useState(true);  // toggle do formulário
 
+  // Busca todos os materiais na API (GET)
   const buscarMateriais = async () => {
     setLoading(true);
     try {
@@ -30,6 +33,7 @@ export default function App() {
     }
   };
 
+  // Atualiza a lista via pull to refresh
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -43,7 +47,9 @@ export default function App() {
     }
   };
 
+  // Cadastra um novo material na API (POST)
   const cadastrarMaterial = async () => {
+    // Validações do formulário
     if (!nome.trim() || !quantidade.trim()) {
       Alert.alert('Atenção', 'Preencha o nome e a quantidade!');
       return;
@@ -61,6 +67,8 @@ export default function App() {
         body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
       });
       const novo = await response.json();
+
+      // Atualiza a lista localmente sem precisar buscar tudo de novo
       setMateriais((prev) => [...prev, novo]);
       setNome('');
       setQuantidade('');
@@ -74,17 +82,21 @@ export default function App() {
     }
   };
 
+  // Busca os materiais ao abrir o app
   useEffect(() => {
     buscarMateriais();
   }, []);
 
-  const totalUnidades = materiais.reduce((acc, item) => acc + Number(item.quantidade || 0), 0);
+  // Calcula o total de unidades em estoque
+  const totalUnidades = materiais.reduce(
+    (acc, item) => acc + Number(item.quantidade || 0), 0
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#1565C0" barStyle="light-content" />
 
-      {/* Header */}
+      {/* Cabeçalho */}
       <View style={styles.header}>
         <Text style={styles.headerIcon}>🏥</Text>
         <View>
@@ -93,7 +105,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* Cards de resumo */}
+      {/* Cards de resumo do estoque */}
       <View style={styles.cardsRow}>
         <View style={styles.card}>
           <Text style={styles.cardNumber}>{materiais.length}</Text>
@@ -105,7 +117,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* Botão toggle formulário */}
+      {/* Botão para mostrar/esconder formulário */}
       <TouchableOpacity
         style={styles.toggleFormButton}
         onPress={() => setFormVisivel(!formVisivel)}
@@ -115,7 +127,7 @@ export default function App() {
         </Text>
       </TouchableOpacity>
 
-      {/* Formulário */}
+      {/* Formulário de cadastro */}
       {formVisivel && (
         <View style={styles.form}>
           <TextInput
@@ -150,7 +162,7 @@ export default function App() {
         </View>
       )}
 
-      {/* Cabeçalho da lista */}
+      {/* Título da lista com botão de atualizar */}
       <View style={styles.subtitleRow}>
         <Text style={styles.subtitle}>Estoque Atual</Text>
         <TouchableOpacity onPress={buscarMateriais} style={styles.refreshButton}>
@@ -158,7 +170,7 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* Lista */}
+      {/* Lista de materiais */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1565C0" />
@@ -170,7 +182,11 @@ export default function App() {
           data={materiais}
           keyExtractor={(item) => item.id}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1565C0']} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1565C0']}
+            />
           }
           renderItem={({ item }) => (
             <View style={styles.item}>
@@ -214,9 +230,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  headerIcon: {
-    fontSize: 32,
-  },
+  headerIcon: { fontSize: 32 },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -244,26 +258,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
   },
-  cardDestaque: {
-    backgroundColor: '#1565C0',
-  },
+  cardDestaque: { backgroundColor: '#1565C0' },
   cardNumber: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1565C0',
   },
-  cardNumberDestaque: {
-    color: '#fff',
-  },
+  cardNumberDestaque: { color: '#fff' },
   cardLabel: {
     fontSize: 12,
     color: '#999',
     textAlign: 'center',
     marginTop: 4,
   },
-  cardLabelDestaque: {
-    color: '#90CAF9',
-  },
+  cardLabelDestaque: { color: '#90CAF9' },
   toggleFormButton: {
     marginHorizontal: 16,
     marginBottom: 8,
@@ -302,9 +310,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  buttonDisabled: {
-    backgroundColor: '#90CAF9',
-  },
+  buttonDisabled: { backgroundColor: '#90CAF9' },
   buttonText: {
     color: '#fff',
     fontSize: 16,
@@ -365,12 +371,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  itemIcon: {
-    fontSize: 20,
-  },
-  itemInfo: {
-    flex: 1,
-  },
+  itemIcon: { fontSize: 20 },
+  itemInfo: { flex: 1 },
   itemNome: {
     fontSize: 15,
     color: '#333',
