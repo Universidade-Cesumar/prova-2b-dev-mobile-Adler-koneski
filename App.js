@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput,
-  TouchableOpacity, FlatList, ActivityIndicator, Alert
+  TouchableOpacity, FlatList, ActivityIndicator, Alert, RefreshControl
 } from 'react-native';
 
 const API_URL = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1/materiais';
@@ -12,6 +12,7 @@ export default function App() {
   const [quantidade, setQuantidade] = useState('');
   const [loading, setLoading] = useState(false);
   const [cadastrando, setCadastrando] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const buscarMateriais = async () => {
     setLoading(true);
@@ -23,6 +24,19 @@ export default function App() {
       console.error('Erro ao buscar materiais:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setMateriais(data);
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -107,6 +121,9 @@ export default function App() {
           testID="lista-materiais"
           data={materiais}
           keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2196F3']} />
+          }
           renderItem={({ item }) => (
             <View style={styles.item}>
               <View>
