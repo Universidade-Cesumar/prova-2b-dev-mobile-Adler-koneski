@@ -388,7 +388,7 @@ export default function App() {
           </View>
         </View>
 
-        {/* Indicadores */}
+       {/* Indicadores */}
         <View style={styles.indicadoresContainer}>
           <Text style={styles.sectionLabel}>INDICADORES</Text>
           <View style={styles.cardsRow}>
@@ -404,6 +404,12 @@ export default function App() {
               <Text style={styles.cardLabel}>Estoque baixo</Text>
               <Text style={[styles.cardNumber, totalAlertas > 0 && styles.cardNumberAlerta]}>
                 {totalAlertas}
+              </Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Itens zerados</Text>
+              <Text style={[styles.cardNumber, materiais.filter(i => Number(i.quantidade) === 0).length > 0 && styles.cardNumberAlerta]}>
+                {materiais.filter(i => Number(i.quantidade) === 0).length}
               </Text>
             </View>
           </View>
