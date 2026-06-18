@@ -173,7 +173,16 @@ export default function App() {
   };
 
   // DELETE - Excluir material
-  const excluirMaterial = async (id, nomeMaterial) => {
+ const excluirMaterial = async (id, nomeMaterial) => {
+    const material = materiais.find(m => m.id === id);
+    if (material && Number(material.quantidade) > 0) {
+      Alert.alert(
+        'Ação bloqueada',
+        `"${nomeMaterial}" ainda possui ${material.quantidade} unidades em estoque. Zere o estoque antes de excluir.`
+      );
+      return;
+    }
+
     Alert.alert(
       'Confirmar exclusão',
       `Deseja excluir "${nomeMaterial}" do estoque?`,
