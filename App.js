@@ -2,12 +2,28 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput,
   TouchableOpacity, FlatList, ActivityIndicator,
-  Alert, RefreshControl, Platform, Keyboard, TouchableWithoutFeedback
+  Alert, RefreshControl, Platform, Keyboard, TouchableWithoutFeedback, Pressable
 } from 'react-native';
 import { validarRetirada } from './src/utils/validacoes';
 
 const API_MATERIAIS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/materiais';
 const API_USUARIOS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/usuarios';
+
+// Alert compatível com web e mobile
+const alertar = (titulo, mensagem, botoes) => {
+  if (Platform.OS === 'web') {
+    if (botoes && botoes.length > 1) {
+      const confirmou = window.confirm(`${titulo}\n\n${mensagem}`);
+      if (confirmou && botoes[1] && botoes[1].onPress) {
+        botoes[1].onPress();
+      }
+    } else {
+      window.alert(`${titulo}\n\n${mensagem}`);
+    }
+  } else {
+    Alert.alert(titulo, mensagem, botoes);
+  }
+};
 
 const getSaudacao = () => {
   const hora = new Date().getHours();
@@ -42,11 +58,10 @@ export default function App() {
   const [busca, setBusca] = useState('');
   const [retiradas, setRetiradas] = useState({});
 
-
   // ===== AUTENTICAÇÃO =====
   const fazerLogin = async () => {
     if (!authEmail.trim() || !authSenha.trim()) {
-      Alert.alert('Atenção', 'Preencha email e senha.');
+      alertar('Atenção', 'Preencha email e senha.');
       return;
     }
     setAuthLoading(true);
@@ -61,10 +76,10 @@ export default function App() {
         setAuthEmail('');
         setAuthSenha('');
       } else {
-        Alert.alert('Erro', 'Email ou senha inválidos.');
+        alertar('Erro', 'Email ou senha inválidos.');
       }
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+      alertar('Erro', 'Não foi possível conectar ao servidor.');
     } finally {
       setAuthLoading(false);
     }
@@ -72,11 +87,11 @@ export default function App() {
 
   const fazerCadastro = async () => {
     if (!authNome.trim() || !authEmail.trim() || !authSenha.trim()) {
-      Alert.alert('Atenção', 'Preencha todos os campos.');
+      alertar('Atenção', 'Preencha todos os campos.');
       return;
     }
     if (authSenha.length < 4) {
-      Alert.alert('Atenção', 'A senha deve ter pelo menos 4 caracteres.');
+      alertar('Atenção', 'A senha deve ter pelo menos 4 caracteres.');
       return;
     }
     setAuthLoading(true);
@@ -84,7 +99,7 @@ export default function App() {
       const check = await fetch(API_USUARIOS);
       const usuarios = await check.json();
       if (usuarios.find(u => u.email === authEmail.trim())) {
-        Alert.alert('Erro', 'Este email já está cadastrado.');
+        alertar('Erro', 'Este email já está cadastrado.');
         setAuthLoading(false);
         return;
       }
@@ -102,9 +117,9 @@ export default function App() {
       setAuthNome('');
       setAuthEmail('');
       setAuthSenha('');
-      Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
+      alertar('Sucesso', 'Cadastro realizado com sucesso!');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível realizar o cadastro.');
+      alertar('Erro', 'Não foi possível realizar o cadastro.');
     } finally {
       setAuthLoading(false);
     }
@@ -129,7 +144,7 @@ export default function App() {
       const data = await response.json();
       setMateriais(data);
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível carregar o estoque.');
+      alertar('Erro', 'Não foi possível carregar o estoque.');
     } finally {
       setLoading(false);
     }
@@ -150,11 +165,11 @@ export default function App() {
 
   const cadastrarMaterial = async () => {
     if (!nome.trim() || !quantidade.trim()) {
-      Alert.alert('Atenção', 'Preencha o nome e a quantidade.');
+      alertar('Atenção', 'Preencha o nome e a quantidade.');
       return;
     }
     if (isNaN(Number(quantidade)) || Number(quantidade) <= 0) {
-      Alert.alert('Atenção', 'A quantidade deve ser um número maior que zero.');
+      alertar('Atenção', 'A quantidade deve ser um número maior que zero.');
       return;
     }
 
@@ -170,26 +185,26 @@ export default function App() {
       setNome('');
       setQuantidade('');
       setFormVisivel(false);
-      Alert.alert('Sucesso', `${novo.nome} cadastrado com ${novo.quantidade} unidades.`);
+      alertar('Sucesso', `${novo.nome} cadastrado com ${novo.quantidade} unidades.`);
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível cadastrar o material.');
+      alertar('Erro', 'Não foi possível cadastrar o material.');
     } finally {
       setCadastrando(false);
     }
   };
 
   // DELETE - Excluir material
- const excluirMaterial = async (id, nomeMaterial) => {
+  const excluirMaterial = async (id, nomeMaterial) => {
     const material = materiais.find(m => m.id === id);
     if (material && Number(material.quantidade) > 0) {
-      Alert.alert(
+      alertar(
         'Ação bloqueada',
         `"${nomeMaterial}" ainda possui ${material.quantidade} unidades em estoque. Zere o estoque antes de excluir.`
       );
       return;
     }
 
-    Alert.alert(
+    alertar(
       'Confirmar exclusão',
       `Deseja excluir "${nomeMaterial}" do estoque?`,
       [
@@ -201,26 +216,27 @@ export default function App() {
             try {
               await fetch(`${API_MATERIAIS}/${id}`, { method: 'DELETE' });
               setMateriais((prev) => prev.filter((item) => item.id !== id));
-              Alert.alert('Sucesso', `"${nomeMaterial}" foi removido do estoque.`);
+              alertar('Sucesso', `"${nomeMaterial}" foi removido do estoque.`);
             } catch (error) {
-              Alert.alert('Erro', 'Não foi possível excluir o material.');
+              alertar('Erro', 'Não foi possível excluir o material.');
             }
           },
         },
       ]
     );
   };
+
   // PUT - Baixa de estoque
-    const baixarEstoque = async (item) => {
+  const baixarEstoque = async (item) => {
     const qtdRetirada = Number(retiradas[item.id] || 0);
     const estoqueAtual = Number(item.quantidade);
 
     if (!validarRetirada(estoqueAtual, qtdRetirada)) {
-      Alert.alert('Operação inválida', 'Quantidade inválida ou superior ao estoque disponível.');
+      alertar('Operação inválida', 'Quantidade inválida ou superior ao estoque disponível.');
       return;
     }
 
-    Alert.alert(
+    alertar(
       'Confirmar retirada',
       `Retirar ${qtdRetirada} unidades de "${item.nome}"?\nSaldo atual: ${estoqueAtual} → Novo saldo: ${estoqueAtual - qtdRetirada}`,
       [
@@ -241,21 +257,22 @@ export default function App() {
               );
               setRetiradas((prev) => ({ ...prev, [item.id]: '' }));
               Keyboard.dismiss();
-              Alert.alert('Sucesso', `Retiradas ${qtdRetirada} unidades de "${item.nome}". Novo saldo: ${novaQtd}`);
+              alertar('Sucesso', `Retiradas ${qtdRetirada} unidades de "${item.nome}". Novo saldo: ${novaQtd}`);
             } catch (error) {
-              Alert.alert('Erro', 'Não foi possível realizar a baixa.');
+              alertar('Erro', 'Não foi possível realizar a baixa.');
             }
           },
         },
       ]
     );
   };
+
   // PUT - Entrada de estoque
   const entradaEstoque = async (item) => {
     const qtdEntrada = Number(retiradas[item.id] || 0);
 
     if (isNaN(qtdEntrada) || qtdEntrada <= 0) {
-      Alert.alert('Atenção', 'Informe uma quantidade válida para entrada.');
+      alertar('Atenção', 'Informe uma quantidade válida para entrada.');
       return;
     }
 
@@ -272,9 +289,9 @@ export default function App() {
       );
       setRetiradas((prev) => ({ ...prev, [item.id]: '' }));
       Keyboard.dismiss();
-      Alert.alert('Sucesso', `Adicionadas ${qtdEntrada} unidades a "${item.nome}". Novo saldo: ${novaQtd}`);
+      alertar('Sucesso', `Adicionadas ${qtdEntrada} unidades a "${item.nome}". Novo saldo: ${novaQtd}`);
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível realizar a entrada.');
+      alertar('Erro', 'Não foi possível realizar a entrada.');
     }
   };
 
@@ -343,8 +360,8 @@ export default function App() {
             secureTextEntry
           />
 
-          <TouchableOpacity
-            style={[styles.button, authLoading && styles.buttonDisabled]}
+          <Pressable
+            style={({ pressed }) => [styles.button, authLoading && styles.buttonDisabled, pressed && { opacity: 0.8 }]}
             onPress={telaAuth === 'login' ? fazerLogin : fazerCadastro}
             disabled={authLoading}
           >
@@ -355,9 +372,9 @@ export default function App() {
                 {telaAuth === 'login' ? 'ENTRAR' : 'CADASTRAR'}
               </Text>
             )}
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => setTelaAuth(telaAuth === 'login' ? 'cadastro' : 'login')}
             style={styles.authSwitch}
           >
@@ -366,221 +383,218 @@ export default function App() {
                 ? 'Não tem conta? Cadastre-se'
                 : 'Já tem conta? Faça login'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );
   }
 
-
- // ===== TELA PRINCIPAL =====
+  // ===== TELA PRINCIPAL =====
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        {/* Cabeçalho */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.headerBrand}>SISTEMA DE ALMOXARIFADO</Text>
-              <Text style={styles.headerTitle}>Controle de Insumos</Text>
-            </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={fazerLogout}>
-              <Text style={styles.logoutText}>Sair</Text>
-            </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Cabeçalho */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.headerBrand}>SISTEMA DE ALMOXARIFADO</Text>
+            <Text style={styles.headerTitle}>Controle de Insumos</Text>
           </View>
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerSubtitle}>{getSaudacao()}, {usuario.nome}</Text>
-            <Text style={styles.headerDate}>{getDataFormatada()}</Text>
+          <Pressable style={styles.logoutButton} onPress={fazerLogout}>
+            <Text style={styles.logoutText}>Sair</Text>
+          </Pressable>
+        </View>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerSubtitle}>{getSaudacao()}, {usuario.nome}</Text>
+          <Text style={styles.headerDate}>{getDataFormatada()}</Text>
+        </View>
+      </View>
+
+      {/* Indicadores */}
+      <View style={styles.indicadoresContainer}>
+        <Text style={styles.sectionLabel}>INDICADORES</Text>
+        <View style={styles.cardsRow}>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Tipos de material</Text>
+            <Text style={styles.cardNumber}>{materiais.length}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Total de unidades</Text>
+            <Text style={[styles.cardNumber, styles.cardNumberPrimary]}>{totalUnidades}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Estoque baixo</Text>
+            <Text style={[styles.cardNumber, totalAlertas > 0 && styles.cardNumberAlerta]}>
+              {totalAlertas}
+            </Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Itens zerados</Text>
+            <Text style={[styles.cardNumber, materiais.filter(i => Number(i.quantidade) === 0).length > 0 && styles.cardNumberAlerta]}>
+              {materiais.filter(i => Number(i.quantidade) === 0).length}
+            </Text>
           </View>
         </View>
+      </View>
 
-       {/* Indicadores */}
-        <View style={styles.indicadoresContainer}>
-          <Text style={styles.sectionLabel}>INDICADORES</Text>
-          <View style={styles.cardsRow}>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Tipos de material</Text>
-              <Text style={styles.cardNumber}>{materiais.length}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Total de unidades</Text>
-              <Text style={[styles.cardNumber, styles.cardNumberPrimary]}>{totalUnidades}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Estoque baixo</Text>
-              <Text style={[styles.cardNumber, totalAlertas > 0 && styles.cardNumberAlerta]}>
-                {totalAlertas}
-              </Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Itens zerados</Text>
-              <Text style={[styles.cardNumber, materiais.filter(i => Number(i.quantidade) === 0).length > 0 && styles.cardNumberAlerta]}>
-                {materiais.filter(i => Number(i.quantidade) === 0).length}
-              </Text>
-            </View>
+      {!formVisivel && (
+        <Pressable
+          style={({ pressed }) => [styles.novoButton, pressed && { opacity: 0.8 }]}
+          onPress={() => setFormVisivel(true)}
+        >
+          <Text style={styles.novoButtonText}>+ NOVO MATERIAL</Text>
+        </Pressable>
+      )}
+
+      {formVisivel && (
+        <View style={styles.form}>
+          <View style={styles.formHeader}>
+            <Text style={styles.formTitle}>Cadastrar Material</Text>
+            <Pressable onPress={() => setFormVisivel(false)}>
+              <Text style={styles.formClose}>Fechar</Text>
+            </Pressable>
           </View>
-        </View>
-
-        {!formVisivel && (
-          <TouchableOpacity
-            style={styles.novoButton}
-            onPress={() => setFormVisivel(true)}
-          >
-            <Text style={styles.novoButtonText}>+ NOVO MATERIAL</Text>
-          </TouchableOpacity>
-        )}
-
-        {formVisivel && (
-          <View style={styles.form}>
-            <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>Cadastrar Material</Text>
-              <TouchableOpacity onPress={() => setFormVisivel(false)}>
-                <Text style={styles.formClose}>Fechar</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.inputLabel}>Nome do material</Text>
-            <TextInput
-              testID="input-nome"
-              style={styles.input}
-              placeholder="Ex: Luva cirúrgica"
-              placeholderTextColor="#9aa5b1"
-              value={nome}
-              onChangeText={setNome}
-            />
-            <Text style={styles.inputLabel}>Quantidade</Text>
-            <TextInput
-              testID="input-quantidade"
-              style={styles.input}
-              placeholder="Ex: 100"
-              placeholderTextColor="#9aa5b1"
-              value={quantidade}
-              onChangeText={setQuantidade}
-              keyboardType="numeric"
-            />
-            <TouchableOpacity
-              testID="btn-cadastrar"
-              style={[styles.button, cadastrando && styles.buttonDisabled]}
-              onPress={cadastrarMaterial}
-              disabled={cadastrando}
-            >
-              {cadastrando ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>CADASTRAR</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={styles.listHeader}>
-          <Text style={styles.sectionLabel}>INVENTÁRIO</Text>
-          <TouchableOpacity onPress={buscarMateriais}>
-            <Text style={styles.refreshLink}>Atualizar</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.searchContainer}>
+          <Text style={styles.inputLabel}>Nome do material</Text>
           <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar material..."
+            testID="input-nome"
+            style={styles.input}
+            placeholder="Ex: Luva cirúrgica"
             placeholderTextColor="#9aa5b1"
-            value={busca}
-            onChangeText={setBusca}
+            value={nome}
+            onChangeText={setNome}
           />
-          {busca.length > 0 && (
-            <TouchableOpacity onPress={() => setBusca('')} style={styles.clearButton}>
-              <Text style={styles.clearButtonText}>limpar</Text>
-            </TouchableOpacity>
-          )}
+          <Text style={styles.inputLabel}>Quantidade</Text>
+          <TextInput
+            testID="input-quantidade"
+            style={styles.input}
+            placeholder="Ex: 100"
+            placeholderTextColor="#9aa5b1"
+            value={quantidade}
+            onChangeText={setQuantidade}
+            keyboardType="numeric"
+          />
+          <Pressable
+            testID="btn-cadastrar"
+            style={({ pressed }) => [styles.button, cadastrando && styles.buttonDisabled, pressed && { opacity: 0.8 }]}
+            onPress={cadastrarMaterial}
+            disabled={cadastrando}
+          >
+            {cadastrando ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>CADASTRAR</Text>
+            )}
+          </Pressable>
         </View>
+      )}
 
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#1e3a5f" />
-            <Text style={styles.loadingText}>Carregando inventário</Text>
-          </View>
-        ) : (
-          <FlatList
-            testID="lista-materiais"
-            data={materiaisFiltrados}
-            keyExtractor={(item) => item.id}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1e3a5f']} />
-            }
-           renderItem={({ item }) => {
-              const estoqueBaixo = Number(item.quantidade) <= 20;
-              const zerado = Number(item.quantidade) === 0;
-              return (
-                <View style={[styles.item, zerado && styles.itemZerado]}>
-                  {estoqueBaixo && <View style={styles.itemAccent} />}
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.itemContent}>
-                      <View style={styles.itemInfo}>
-                        <Text style={styles.itemNome}>{item.nome}</Text>
-                        <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
-                          {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
-                        </Text>
-                      </View>
-                      <View style={styles.itemRight}>
-                        <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
-                          {item.quantidade}
-                        </Text>
-                        <Text style={styles.itemQtdLabel}>unidades</Text>
-                      </View>
-                    </View>
-                    <View style={styles.itemActions}>
-                      <TextInput
-                        testID="input-retirada"
-                        style={styles.inputRetirada}
-                        placeholder="Qtd"
-                        placeholderTextColor="#9aa5b1"
-                        value={retiradas[item.id] || ''}
-                        onChangeText={(text) =>
-                          setRetiradas((prev) => ({ ...prev, [item.id]: text }))
-                        }
-                        keyboardType="numeric"
-                      />
-                     <TouchableOpacity
-                        testID="btn-baixar"
-                        style={[styles.baixarButton, zerado && styles.buttonDisabled]}
-                        onPress={() => baixarEstoque(item)}
-                        disabled={zerado}
-                      >
-                        <Text style={styles.baixarButtonText}>Retirar</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.entradaButton}
-                        onPress={() => entradaEstoque(item)}
-                      >
-                        <Text style={styles.entradaButtonText}>Entrada</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        testID="btn-excluir"
-                        style={styles.deleteButton}
-                        onPress={() => excluirMaterial(item.id, item.nome)}
-                      >
-                        <Text style={styles.deleteButtonText}>Excluir</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              );
-            }}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>
-                  {busca.length > 0 ? 'Nenhum resultado encontrado' : 'Inventário vazio'}
-                </Text>
-                <Text style={styles.emptySubText}>
-                  {busca.length > 0 ? `Sem correspondência para "${busca}"` : 'Cadastre o primeiro material para iniciar'}
-                </Text>
-              </View>
-            }
-            contentContainerStyle={{ paddingBottom: 24 }}
-          />
+      <View style={styles.listHeader}>
+        <Text style={styles.sectionLabel}>INVENTÁRIO</Text>
+        <Pressable onPress={buscarMateriais}>
+          <Text style={styles.refreshLink}>Atualizar</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar material..."
+          placeholderTextColor="#9aa5b1"
+          value={busca}
+          onChangeText={setBusca}
+        />
+        {busca.length > 0 && (
+          <Pressable onPress={() => setBusca('')} style={styles.clearButton}>
+            <Text style={styles.clearButtonText}>limpar</Text>
+          </Pressable>
         )}
       </View>
-    </TouchableWithoutFeedback>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#1e3a5f" />
+          <Text style={styles.loadingText}>Carregando inventário</Text>
+        </View>
+      ) : (
+        <FlatList
+          testID="lista-materiais"
+          data={materiaisFiltrados}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1e3a5f']} />
+          }
+          renderItem={({ item }) => {
+            const estoqueBaixo = Number(item.quantidade) <= 20;
+            const zerado = Number(item.quantidade) === 0;
+            return (
+              <View style={[styles.item, zerado && styles.itemZerado]}>
+                {estoqueBaixo && <View style={styles.itemAccent} />}
+                <View style={{ flex: 1 }}>
+                  <View style={styles.itemContent}>
+                    <View style={styles.itemInfo}>
+                      <Text style={styles.itemNome}>{item.nome}</Text>
+                      <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
+                        {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
+                      </Text>
+                    </View>
+                    <View style={styles.itemRight}>
+                      <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
+                        {item.quantidade}
+                      </Text>
+                      <Text style={styles.itemQtdLabel}>unidades</Text>
+                    </View>
+                  </View>
+                  <View style={styles.itemActions}>
+                    <TextInput
+                      testID="input-retirada"
+                      style={styles.inputRetirada}
+                      placeholder="Qtd"
+                      placeholderTextColor="#9aa5b1"
+                      value={retiradas[item.id] || ''}
+                      onChangeText={(text) =>
+                        setRetiradas((prev) => ({ ...prev, [item.id]: text }))
+                      }
+                      keyboardType="numeric"
+                    />
+                    <Pressable
+                      testID="btn-baixar"
+                      style={({ pressed }) => [styles.baixarButton, zerado && styles.buttonDisabled, pressed && { opacity: 0.7 }]}
+                      onPress={() => baixarEstoque(item)}
+                      disabled={zerado}
+                    >
+                      <Text style={styles.baixarButtonText}>Retirar</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [styles.entradaButton, pressed && { opacity: 0.7 }]}
+                      onPress={() => entradaEstoque(item)}
+                    >
+                      <Text style={styles.entradaButtonText}>Entrada</Text>
+                    </Pressable>
+                    <Pressable
+                      testID="btn-excluir"
+                      style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.7 }]}
+                      onPress={() => excluirMaterial(item.id, item.nome)}
+                    >
+                      <Text style={styles.deleteButtonText}>Excluir</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {busca.length > 0 ? 'Nenhum resultado encontrado' : 'Inventário vazio'}
+              </Text>
+              <Text style={styles.emptySubText}>
+                {busca.length > 0 ? `Sem correspondência para "${busca}"` : 'Cadastre o primeiro material para iniciar'}
+              </Text>
+            </View>
+          }
+          contentContainerStyle={{ paddingBottom: 24 }}
+        />
+      )}
+    </View>
   );
 }
 
@@ -858,11 +872,9 @@ const styles = StyleSheet.create({
     width: 3,
     backgroundColor: '#c2410c',
   },
-   itemZerado: {
+  itemZerado: {
     opacity: 0.5,
   },
-
-
   itemContent: {
     flex: 1,
     flexDirection: 'row',
@@ -903,20 +915,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: -2,
   },
-  deleteButton: {
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  deleteButtonText: {
-    color: '#dc2626',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
   itemActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -956,6 +954,19 @@ const styles = StyleSheet.create({
   },
   entradaButtonText: {
     color: '#15803d',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#fef2f2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  deleteButtonText: {
+    color: '#dc2626',
     fontSize: 11,
     fontWeight: '600',
   },
