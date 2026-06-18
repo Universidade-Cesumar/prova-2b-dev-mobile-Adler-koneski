@@ -534,10 +534,11 @@ export default function App() {
                         }
                         keyboardType="numeric"
                       />
-                      <TouchableOpacity
+                     <TouchableOpacity
                         testID="btn-baixar"
-                        style={styles.baixarButton}
+                        style={[styles.baixarButton, zerado && styles.buttonDisabled]}
                         onPress={() => baixarEstoque(item)}
+                        disabled={zerado}
                       >
                         <Text style={styles.baixarButtonText}>Retirar</Text>
                       </TouchableOpacity>
