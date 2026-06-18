@@ -205,7 +205,7 @@ export default function App() {
     );
   };
   // PUT - Baixa de estoque
-  const baixarEstoque = async (item) => {
+    const baixarEstoque = async (item) => {
     const qtdRetirada = Number(retiradas[item.id] || 0);
     const estoqueAtual = Number(item.quantidade);
 
@@ -243,6 +243,33 @@ export default function App() {
         },
       ]
     );
+  };
+  // PUT - Entrada de estoque
+  const entradaEstoque = async (item) => {
+    const qtdEntrada = Number(retiradas[item.id] || 0);
+
+    if (isNaN(qtdEntrada) || qtdEntrada <= 0) {
+      Alert.alert('Atenção', 'Informe uma quantidade válida para entrada.');
+      return;
+    }
+
+    try {
+      const novaQtd = Number(item.quantidade) + qtdEntrada;
+      const response = await fetch(`${API_MATERIAIS}/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantidade: novaQtd }),
+      });
+      const atualizado = await response.json();
+      setMateriais((prev) =>
+        prev.map((m) => (m.id === item.id ? atualizado : m))
+      );
+      setRetiradas((prev) => ({ ...prev, [item.id]: '' }));
+      Keyboard.dismiss();
+      Alert.alert('Sucesso', `Adicionadas ${qtdEntrada} unidades a "${item.nome}". Novo saldo: ${novaQtd}`);
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível realizar a entrada.');
+    }
   };
 
   useEffect(() => {
@@ -468,7 +495,7 @@ export default function App() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1e3a5f']} />
             }
-            renderItem={({ item }) => {
+           renderItem={({ item }) => {
               const estoqueBaixo = Number(item.quantidade) <= 20;
               return (
                 <View style={styles.item}>
@@ -506,6 +533,12 @@ export default function App() {
                         onPress={() => baixarEstoque(item)}
                       >
                         <Text style={styles.baixarButtonText}>Retirar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.entradaButton}
+                        onPress={() => entradaEstoque(item)}
+                      >
+                        <Text style={styles.entradaButtonText}>Entrada</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         testID="btn-excluir"
@@ -891,6 +924,19 @@ const styles = StyleSheet.create({
   },
   baixarButtonText: {
     color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  entradaButton: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  entradaButtonText: {
+    color: '#15803d',
     fontSize: 11,
     fontWeight: '600',
   },
