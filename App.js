@@ -497,8 +497,9 @@ export default function App() {
             }
            renderItem={({ item }) => {
               const estoqueBaixo = Number(item.quantidade) <= 20;
+              const zerado = Number(item.quantidade) === 0;
               return (
-                <View style={styles.item}>
+                <View style={[styles.item, zerado && styles.itemZerado]}>
                   {estoqueBaixo && <View style={styles.itemAccent} />}
                   <View style={{ flex: 1 }}>
                     <View style={styles.itemContent}>
@@ -844,6 +845,11 @@ const styles = StyleSheet.create({
     width: 3,
     backgroundColor: '#c2410c',
   },
+   itemZerado: {
+    opacity: 0.5,
+  },
+
+
   itemContent: {
     flex: 1,
     flexDirection: 'row',
