@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput,
   TouchableOpacity, FlatList, ActivityIndicator,
-  Alert, RefreshControl, Platform
+  Alert, RefreshControl, Platform, Keyboard, TouchableWithoutFeedback
 } from 'react-native';
 import { validarRetirada } from './validarRetirada';
 
@@ -329,198 +329,201 @@ const baixarEstoque = async (item) => {
     );
   }
 
-  // ===== TELA PRINCIPAL =====
+
+ // ===== TELA PRINCIPAL =====
   return (
-    <View style={styles.container}>
-      {/* Cabeçalho */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.headerBrand}>SISTEMA DE ALMOXARIFADO</Text>
-            <Text style={styles.headerTitle}>Controle de Insumos</Text>
-          </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={fazerLogout}>
-            <Text style={styles.logoutText}>Sair</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerSubtitle}>{getSaudacao()}, {usuario.nome}</Text>
-          <Text style={styles.headerDate}>{getDataFormatada()}</Text>
-        </View>
-      </View>
-
-      {/* Indicadores */}
-      <View style={styles.indicadoresContainer}>
-        <Text style={styles.sectionLabel}>INDICADORES</Text>
-        <View style={styles.cardsRow}>
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Tipos de material</Text>
-            <Text style={styles.cardNumber}>{materiais.length}</Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Total de unidades</Text>
-            <Text style={[styles.cardNumber, styles.cardNumberPrimary]}>{totalUnidades}</Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Estoque baixo</Text>
-            <Text style={[styles.cardNumber, totalAlertas > 0 && styles.cardNumberAlerta]}>
-              {totalAlertas}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {!formVisivel && (
-        <TouchableOpacity
-          style={styles.novoButton}
-          onPress={() => setFormVisivel(true)}
-        >
-          <Text style={styles.novoButtonText}>+ NOVO MATERIAL</Text>
-        </TouchableOpacity>
-      )}
-
-      {formVisivel && (
-        <View style={styles.form}>
-          <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Cadastrar Material</Text>
-            <TouchableOpacity onPress={() => setFormVisivel(false)}>
-              <Text style={styles.formClose}>Fechar</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        {/* Cabeçalho */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.headerBrand}>SISTEMA DE ALMOXARIFADO</Text>
+              <Text style={styles.headerTitle}>Controle de Insumos</Text>
+            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={fazerLogout}>
+              <Text style={styles.logoutText}>Sair</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.inputLabel}>Nome do material</Text>
-          <TextInput
-            testID="input-nome"
-            style={styles.input}
-            placeholder="Ex: Luva cirúrgica"
-            placeholderTextColor="#9aa5b1"
-            value={nome}
-            onChangeText={setNome}
-          />
-          <Text style={styles.inputLabel}>Quantidade</Text>
-          <TextInput
-            testID="input-quantidade"
-            style={styles.input}
-            placeholder="Ex: 100"
-            placeholderTextColor="#9aa5b1"
-            value={quantidade}
-            onChangeText={setQuantidade}
-            keyboardType="numeric"
-          />
-          <TouchableOpacity
-            testID="btn-cadastrar"
-            style={[styles.button, cadastrando && styles.buttonDisabled]}
-            onPress={cadastrarMaterial}
-            disabled={cadastrando}
-          >
-            {cadastrando ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>CADASTRAR</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerSubtitle}>{getSaudacao()}, {usuario.nome}</Text>
+            <Text style={styles.headerDate}>{getDataFormatada()}</Text>
+          </View>
         </View>
-      )}
 
-      <View style={styles.listHeader}>
-        <Text style={styles.sectionLabel}>INVENTÁRIO</Text>
-        <TouchableOpacity onPress={buscarMateriais}>
-          <Text style={styles.refreshLink}>Atualizar</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar material..."
-          placeholderTextColor="#9aa5b1"
-          value={busca}
-          onChangeText={setBusca}
-        />
-        {busca.length > 0 && (
-          <TouchableOpacity onPress={() => setBusca('')} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>limpar</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#1e3a5f" />
-          <Text style={styles.loadingText}>Carregando inventário</Text>
-        </View>
-      ) : (
-        <FlatList
-          testID="lista-materiais"
-          data={materiaisFiltrados}
-          keyExtractor={(item) => item.id}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1e3a5f']} />
-          }
-          renderItem={({ item }) => {
-            const estoqueBaixo = Number(item.quantidade) <= 20;
-            return (
-              <View style={styles.item}>
-                {estoqueBaixo && <View style={styles.itemAccent} />}
-                <View style={{ flex: 1 }}>
-                  <View style={styles.itemContent}>
-                    <View style={styles.itemInfo}>
-                      <Text style={styles.itemNome}>{item.nome}</Text>
-                      <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
-                        {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
-                      </Text>
-                    </View>
-                    <View style={styles.itemRight}>
-                      <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
-                        {item.quantidade}
-                      </Text>
-                      <Text style={styles.itemQtdLabel}>unidades</Text>
-                    </View>
-                  </View>
-                  <View style={styles.itemActions}>
-                    <TextInput
-                      testID="input-retirada"
-                      style={styles.inputRetirada}
-                      placeholder="Qtd"
-                      placeholderTextColor="#9aa5b1"
-                      value={retiradas[item.id] || ''}
-                      onChangeText={(text) =>
-                        setRetiradas((prev) => ({ ...prev, [item.id]: text }))
-                      }
-                      keyboardType="numeric"
-                    />
-                    <TouchableOpacity
-                      testID="btn-baixar"
-                      style={styles.baixarButton}
-                      onPress={() => baixarEstoque(item)}
-                    >
-                      <Text style={styles.baixarButtonText}>Retirar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      testID="btn-excluir"
-                      style={styles.deleteButton}
-                      onPress={() => excluirMaterial(item.id, item.nome)}
-                    >
-                      <Text style={styles.deleteButtonText}>Excluir</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            );
-          }}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                {busca.length > 0 ? 'Nenhum resultado encontrado' : 'Inventário vazio'}
-              </Text>
-              <Text style={styles.emptySubText}>
-                {busca.length > 0 ? `Sem correspondência para "${busca}"` : 'Cadastre o primeiro material para iniciar'}
+        {/* Indicadores */}
+        <View style={styles.indicadoresContainer}>
+          <Text style={styles.sectionLabel}>INDICADORES</Text>
+          <View style={styles.cardsRow}>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Tipos de material</Text>
+              <Text style={styles.cardNumber}>{materiais.length}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Total de unidades</Text>
+              <Text style={[styles.cardNumber, styles.cardNumberPrimary]}>{totalUnidades}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Estoque baixo</Text>
+              <Text style={[styles.cardNumber, totalAlertas > 0 && styles.cardNumberAlerta]}>
+                {totalAlertas}
               </Text>
             </View>
-          }
-          contentContainerStyle={{ paddingBottom: 24 }}
-        />
-      )}
-    </View>
+          </View>
+        </View>
+
+        {!formVisivel && (
+          <TouchableOpacity
+            style={styles.novoButton}
+            onPress={() => setFormVisivel(true)}
+          >
+            <Text style={styles.novoButtonText}>+ NOVO MATERIAL</Text>
+          </TouchableOpacity>
+        )}
+
+        {formVisivel && (
+          <View style={styles.form}>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Cadastrar Material</Text>
+              <TouchableOpacity onPress={() => setFormVisivel(false)}>
+                <Text style={styles.formClose}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.inputLabel}>Nome do material</Text>
+            <TextInput
+              testID="input-nome"
+              style={styles.input}
+              placeholder="Ex: Luva cirúrgica"
+              placeholderTextColor="#9aa5b1"
+              value={nome}
+              onChangeText={setNome}
+            />
+            <Text style={styles.inputLabel}>Quantidade</Text>
+            <TextInput
+              testID="input-quantidade"
+              style={styles.input}
+              placeholder="Ex: 100"
+              placeholderTextColor="#9aa5b1"
+              value={quantidade}
+              onChangeText={setQuantidade}
+              keyboardType="numeric"
+            />
+            <TouchableOpacity
+              testID="btn-cadastrar"
+              style={[styles.button, cadastrando && styles.buttonDisabled]}
+              onPress={cadastrarMaterial}
+              disabled={cadastrando}
+            >
+              {cadastrando ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>CADASTRAR</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.listHeader}>
+          <Text style={styles.sectionLabel}>INVENTÁRIO</Text>
+          <TouchableOpacity onPress={buscarMateriais}>
+            <Text style={styles.refreshLink}>Atualizar</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar material..."
+            placeholderTextColor="#9aa5b1"
+            value={busca}
+            onChangeText={setBusca}
+          />
+          {busca.length > 0 && (
+            <TouchableOpacity onPress={() => setBusca('')} style={styles.clearButton}>
+              <Text style={styles.clearButtonText}>limpar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#1e3a5f" />
+            <Text style={styles.loadingText}>Carregando inventário</Text>
+          </View>
+        ) : (
+          <FlatList
+            testID="lista-materiais"
+            data={materiaisFiltrados}
+            keyExtractor={(item) => item.id}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1e3a5f']} />
+            }
+            renderItem={({ item }) => {
+              const estoqueBaixo = Number(item.quantidade) <= 20;
+              return (
+                <View style={styles.item}>
+                  {estoqueBaixo && <View style={styles.itemAccent} />}
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.itemContent}>
+                      <View style={styles.itemInfo}>
+                        <Text style={styles.itemNome}>{item.nome}</Text>
+                        <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
+                          {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
+                        </Text>
+                      </View>
+                      <View style={styles.itemRight}>
+                        <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
+                          {item.quantidade}
+                        </Text>
+                        <Text style={styles.itemQtdLabel}>unidades</Text>
+                      </View>
+                    </View>
+                    <View style={styles.itemActions}>
+                      <TextInput
+                        testID="input-retirada"
+                        style={styles.inputRetirada}
+                        placeholder="Qtd"
+                        placeholderTextColor="#9aa5b1"
+                        value={retiradas[item.id] || ''}
+                        onChangeText={(text) =>
+                          setRetiradas((prev) => ({ ...prev, [item.id]: text }))
+                        }
+                        keyboardType="numeric"
+                      />
+                      <TouchableOpacity
+                        testID="btn-baixar"
+                        style={styles.baixarButton}
+                        onPress={() => baixarEstoque(item)}
+                      >
+                        <Text style={styles.baixarButtonText}>Retirar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        testID="btn-excluir"
+                        style={styles.deleteButton}
+                        onPress={() => excluirMaterial(item.id, item.nome)}
+                      >
+                        <Text style={styles.deleteButtonText}>Excluir</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              );
+            }}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  {busca.length > 0 ? 'Nenhum resultado encontrado' : 'Inventário vazio'}
+                </Text>
+                <Text style={styles.emptySubText}>
+                  {busca.length > 0 ? `Sem correspondência para "${busca}"` : 'Cadastre o primeiro material para iniciar'}
+                </Text>
+              </View>
+            }
+            contentContainerStyle={{ paddingBottom: 24 }}
+          />
+        )}
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
