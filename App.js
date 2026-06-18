@@ -196,7 +196,7 @@ export default function App() {
     );
   };
   // PUT - Baixa de estoque
-  const baixarEstoque = async (item) => {
+const baixarEstoque = async (item) => {
     const qtdRetirada = Number(retiradas[item.id] || 0);
     const estoqueAtual = Number(item.quantidade);
 
@@ -205,22 +205,34 @@ export default function App() {
       return;
     }
 
-    try {
-      const novaQtd = estoqueAtual - qtdRetirada;
-      const response = await fetch(`${API_MATERIAIS}/${item.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantidade: novaQtd }),
-      });
-      const atualizado = await response.json();
-      setMateriais((prev) =>
-        prev.map((m) => (m.id === item.id ? atualizado : m))
-      );
-      setRetiradas((prev) => ({ ...prev, [item.id]: '' }));
-      Alert.alert('Sucesso', `Retiradas ${qtdRetirada} unidades de "${item.nome}". Novo saldo: ${novaQtd}`);
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível realizar a baixa.');
-    }
+    Alert.alert(
+      'Confirmar retirada',
+      `Retirar ${qtdRetirada} unidades de "${item.nome}"?\nSaldo atual: ${estoqueAtual} → Novo saldo: ${estoqueAtual - qtdRetirada}`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            try {
+              const novaQtd = estoqueAtual - qtdRetirada;
+              const response = await fetch(`${API_MATERIAIS}/${item.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantidade: novaQtd }),
+              });
+              const atualizado = await response.json();
+              setMateriais((prev) =>
+                prev.map((m) => (m.id === item.id ? atualizado : m))
+              );
+              setRetiradas((prev) => ({ ...prev, [item.id]: '' }));
+              Alert.alert('Sucesso', `Retiradas ${qtdRetirada} unidades de "${item.nome}". Novo saldo: ${novaQtd}`);
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível realizar a baixa.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
