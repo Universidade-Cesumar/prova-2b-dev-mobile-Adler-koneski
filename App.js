@@ -40,6 +40,8 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [formVisivel, setFormVisivel] = useState(false);
   const [busca, setBusca] = useState('');
+  const [retiradas, setRetiradas] = useState({});
+
 
   // ===== AUTENTICAÇÃO =====
   const fazerLogin = async () => {
@@ -192,6 +194,33 @@ export default function App() {
         },
       ]
     );
+  };
+  // PUT - Baixa de estoque
+  const baixarEstoque = async (item) => {
+    const qtdRetirada = Number(retiradas[item.id] || 0);
+    const estoqueAtual = Number(item.quantidade);
+
+    if (!validarRetirada(estoqueAtual, qtdRetirada)) {
+      Alert.alert('Operação inválida', 'Quantidade inválida ou superior ao estoque disponível.');
+      return;
+    }
+
+    try {
+      const novaQtd = estoqueAtual - qtdRetirada;
+      const response = await fetch(`${API_MATERIAIS}/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantidade: novaQtd }),
+      });
+      const atualizado = await response.json();
+      setMateriais((prev) =>
+        prev.map((m) => (m.id === item.id ? atualizado : m))
+      );
+      setRetiradas((prev) => ({ ...prev, [item.id]: '' }));
+      Alert.alert('Sucesso', `Retiradas ${qtdRetirada} unidades de "${item.nome}". Novo saldo: ${novaQtd}`);
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível realizar a baixa.');
+    }
   };
 
   useEffect(() => {
@@ -420,26 +449,48 @@ export default function App() {
             return (
               <View style={styles.item}>
                 {estoqueBaixo && <View style={styles.itemAccent} />}
-                <View style={styles.itemContent}>
-                  <View style={styles.itemInfo}>
-                    <Text style={styles.itemNome}>{item.nome}</Text>
-                    <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
-                      {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
-                    </Text>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.itemContent}>
+                    <View style={styles.itemInfo}>
+                      <Text style={styles.itemNome}>{item.nome}</Text>
+                      <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
+                        {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
+                      </Text>
+                    </View>
+                    <View style={styles.itemRight}>
+                      <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
+                        {item.quantidade}
+                      </Text>
+                      <Text style={styles.itemQtdLabel}>unidades</Text>
+                    </View>
                   </View>
-                  <View style={styles.itemRight}>
-                    <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
-                      {item.quantidade}
-                    </Text>
-                    <Text style={styles.itemQtdLabel}>unidades</Text>
+                  <View style={styles.itemActions}>
+                    <TextInput
+                      testID="input-retirada"
+                      style={styles.inputRetirada}
+                      placeholder="Qtd"
+                      placeholderTextColor="#9aa5b1"
+                      value={retiradas[item.id] || ''}
+                      onChangeText={(text) =>
+                        setRetiradas((prev) => ({ ...prev, [item.id]: text }))
+                      }
+                      keyboardType="numeric"
+                    />
+                    <TouchableOpacity
+                      testID="btn-baixar"
+                      style={styles.baixarButton}
+                      onPress={() => baixarEstoque(item)}
+                    >
+                      <Text style={styles.baixarButtonText}>Retirar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      testID="btn-excluir"
+                      style={styles.deleteButton}
+                      onPress={() => excluirMaterial(item.id, item.nome)}
+                    >
+                      <Text style={styles.deleteButtonText}>Excluir</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    testID="btn-excluir"
-                    style={styles.deleteButton}
-                    onPress={() => excluirMaterial(item.id, item.nome)}
-                  >
-                    <Text style={styles.deleteButtonText}>Excluir</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             );
@@ -785,6 +836,36 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#dc2626',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  inputRetirada: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 13,
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+  },
+  baixarButton: {
+    backgroundColor: '#1e3a5f',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  baixarButtonText: {
+    color: '#fff',
     fontSize: 11,
     fontWeight: '600',
   },
