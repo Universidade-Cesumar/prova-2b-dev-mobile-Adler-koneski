@@ -51,6 +51,10 @@ npx expo start
 - ✅ Pull to refresh na lista
 - ✅ Cards de resumo com total de tipos e unidades
 - ✅ Feedback visual de loading
+- ✅ Baixa de estoque com validação (PUT)
+- ✅ Exclusão de materiais com confirmação (DELETE)
+- ✅ Função validarRetirada com regras de negócio
+- ✅ Sistema de autenticação (login e cadastro)
 
 ## 🔗 API
 
@@ -60,6 +64,8 @@ Base URL: `https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/api/v1`
 |--------|----------|-----------|
 | GET | /materiais | Lista todos os materiais |
 | POST | /materiais | Cadastra novo material |
+| PUT | /materiais/:id | Atualiza quantidade do material |
+| DELETE | /materiais/:id | Remove material do estoque |
 
 ## 👨‍💻 Desenvolvedor
 
