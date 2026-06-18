@@ -4,7 +4,7 @@ import {
   TouchableOpacity, FlatList, ActivityIndicator,
   Alert, RefreshControl, Platform, Keyboard, TouchableWithoutFeedback
 } from 'react-native';
-import { validarRetirada } from './validarRetirada';
+import { validarRetirada } from './src/utils/validacoes';
 
 const API_MATERIAIS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/materiais';
 const API_USUARIOS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/usuarios';
