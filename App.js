@@ -116,6 +116,12 @@ export default function App() {
   };
 
   // ===== MATERIAIS =====
+  // Sprint 2 - Regras de Negócio:
+  // - Baixa de estoque (PUT) com validação via validarRetirada
+  // - Exclusão de material (DELETE) com confirmação
+  // - Entrada de estoque (PUT) para reposição
+  // - Bloqueio de retirada em estoque zerado
+  // - Bloqueio de exclusão com estoque acima de zero
   const buscarMateriais = async () => {
     setLoading(true);
     try {
