@@ -196,7 +196,7 @@ export default function App() {
     );
   };
   // PUT - Baixa de estoque
-const baixarEstoque = async (item) => {
+  const baixarEstoque = async (item) => {
     const qtdRetirada = Number(retiradas[item.id] || 0);
     const estoqueAtual = Number(item.quantidade);
 
@@ -225,6 +225,7 @@ const baixarEstoque = async (item) => {
                 prev.map((m) => (m.id === item.id ? atualizado : m))
               );
               setRetiradas((prev) => ({ ...prev, [item.id]: '' }));
+              Keyboard.dismiss();
               Alert.alert('Sucesso', `Retiradas ${qtdRetirada} unidades de "${item.nome}". Novo saldo: ${novaQtd}`);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível realizar a baixa.');
