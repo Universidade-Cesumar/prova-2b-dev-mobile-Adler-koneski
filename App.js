@@ -4,6 +4,7 @@ import {
   TouchableOpacity, FlatList, ActivityIndicator,
   Alert, RefreshControl, Platform
 } from 'react-native';
+import { validarRetirada } from './validarRetirada';
 
 const API_MATERIAIS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/materiais';
 const API_USUARIOS = 'https://6a2b34d9b687a7d5cbc4f27f.mockapi.io/usuarios';
@@ -24,7 +25,7 @@ const getDataFormatada = () => {
 export default function App() {
   // Autenticação
   const [usuario, setUsuario] = useState(null);
-  const [telaAuth, setTelaAuth] = useState('login'); // 'login' ou 'cadastro'
+  const [telaAuth, setTelaAuth] = useState('login');
   const [authNome, setAuthNome] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authSenha, setAuthSenha] = useState('');
@@ -61,7 +62,6 @@ export default function App() {
         Alert.alert('Erro', 'Email ou senha inválidos.');
       }
     } catch (error) {
-      console.error('Erro no login:', error);
       Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
     } finally {
       setAuthLoading(false);
@@ -79,7 +79,6 @@ export default function App() {
     }
     setAuthLoading(true);
     try {
-      // Verifica se email já existe
       const check = await fetch(API_USUARIOS);
       const usuarios = await check.json();
       if (usuarios.find(u => u.email === authEmail.trim())) {
@@ -87,7 +86,6 @@ export default function App() {
         setAuthLoading(false);
         return;
       }
-      // Cria usuário
       const response = await fetch(API_USUARIOS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,7 +102,6 @@ export default function App() {
       setAuthSenha('');
       Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
     } catch (error) {
-      console.error('Erro no cadastro:', error);
       Alert.alert('Erro', 'Não foi possível realizar o cadastro.');
     } finally {
       setAuthLoading(false);
@@ -124,7 +121,6 @@ export default function App() {
       const data = await response.json();
       setMateriais(data);
     } catch (error) {
-      console.error('Erro ao buscar materiais:', error);
       Alert.alert('Erro', 'Não foi possível carregar o estoque.');
     } finally {
       setLoading(false);
@@ -168,11 +164,34 @@ export default function App() {
       setFormVisivel(false);
       Alert.alert('Sucesso', `${novo.nome} cadastrado com ${novo.quantidade} unidades.`);
     } catch (error) {
-      console.error('Erro ao cadastrar:', error);
       Alert.alert('Erro', 'Não foi possível cadastrar o material.');
     } finally {
       setCadastrando(false);
     }
+  };
+
+  // DELETE - Excluir material
+  const excluirMaterial = async (id, nomeMaterial) => {
+    Alert.alert(
+      'Confirmar exclusão',
+      `Deseja excluir "${nomeMaterial}" do estoque?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await fetch(`${API_MATERIAIS}/${id}`, { method: 'DELETE' });
+              setMateriais((prev) => prev.filter((item) => item.id !== id));
+              Alert.alert('Sucesso', `"${nomeMaterial}" foi removido do estoque.`);
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível excluir o material.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
@@ -394,11 +413,7 @@ export default function App() {
           data={materiaisFiltrados}
           keyExtractor={(item) => item.id}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#1e3a5f']}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1e3a5f']} />
           }
           renderItem={({ item }) => {
             const estoqueBaixo = Number(item.quantidade) <= 20;
@@ -418,6 +433,13 @@ export default function App() {
                     </Text>
                     <Text style={styles.itemQtdLabel}>unidades</Text>
                   </View>
+                  <TouchableOpacity
+                    testID="btn-excluir"
+                    style={styles.deleteButton}
+                    onPress={() => excluirMaterial(item.id, item.nome)}
+                  >
+                    <Text style={styles.deleteButtonText}>Excluir</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             );
@@ -440,7 +462,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // Auth
   authContainer: {
     flex: 1,
     backgroundColor: '#1e3a5f',
@@ -486,8 +507,6 @@ const styles = StyleSheet.create({
     color: '#1e3a5f',
     fontWeight: '500',
   },
-
-  // Container principal
   container: {
     flex: 1,
     backgroundColor: '#f4f6f8',
@@ -739,7 +758,10 @@ const styles = StyleSheet.create({
     color: '#c2410c',
     fontWeight: '600',
   },
-  itemRight: { alignItems: 'flex-end' },
+  itemRight: {
+    alignItems: 'flex-end',
+    marginRight: 12,
+  },
   itemQtd: {
     fontSize: 18,
     color: '#1e3a5f',
@@ -752,6 +774,19 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontWeight: '500',
     marginTop: -2,
+  },
+  deleteButton: {
+    backgroundColor: '#fef2f2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  deleteButtonText: {
+    color: '#dc2626',
+    fontSize: 11,
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
