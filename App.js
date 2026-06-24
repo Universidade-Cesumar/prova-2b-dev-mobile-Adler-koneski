@@ -210,7 +210,7 @@ export default function App() {
   };
 
   // DELETE - Excluir material
-  const excluirMaterial = async (id, nomeMaterial) => {
+const excluirMaterial = async (id, nomeMaterial) => {
     const material = materiais.find(m => m.id === id);
     if (material && Number(material.quantidade) > 0) {
       alertar(
@@ -230,11 +230,19 @@ export default function App() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await fetch(`${API_MATERIAIS}/${id}`, { method: 'DELETE' });
+              const response = await fetch(`${API_MATERIAIS}/${id}`, { method: 'DELETE' });
+              if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+              }
               setMateriais((prev) => prev.filter((item) => item.id !== id));
               alertar('Sucesso', `"${nomeMaterial}" foi removido do estoque.`);
             } catch (error) {
-              alertar('Erro', 'Não foi possível excluir o material.');
+              console.error('Erro ao excluir:', error);
+              if (error.message.includes('Network') || error.message.includes('fetch')) {
+                alertar('Sem conexão', 'Verifique sua conexão com a internet.');
+              } else {
+                alertar('Erro', 'Não foi possível excluir o material.');
+              }
             }
           },
         },
@@ -243,7 +251,7 @@ export default function App() {
   };
 
   // PUT - Baixa de estoque
-  const baixarEstoque = async (item) => {
+ const baixarEstoque = async (item) => {
     const qtdRetirada = Number(retiradas[item.id] || 0);
     const estoqueAtual = Number(item.quantidade);
 
@@ -267,6 +275,9 @@ export default function App() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ quantidade: novaQtd }),
               });
+              if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+              }
               const atualizado = await response.json();
               setMateriais((prev) =>
                 prev.map((m) => (m.id === item.id ? atualizado : m))
@@ -275,7 +286,12 @@ export default function App() {
               Keyboard.dismiss();
               alertar('Sucesso', `Retiradas ${qtdRetirada} unidades de "${item.nome}". Novo saldo: ${novaQtd}`);
             } catch (error) {
-              alertar('Erro', 'Não foi possível realizar a baixa.');
+              console.error('Erro na baixa:', error);
+              if (error.message.includes('Network') || error.message.includes('fetch')) {
+                alertar('Sem conexão', 'Verifique sua conexão com a internet.');
+              } else {
+                alertar('Erro', 'Não foi possível realizar a baixa.');
+              }
             }
           },
         },
@@ -284,7 +300,7 @@ export default function App() {
   };
 
   // PUT - Entrada de estoque
-  const entradaEstoque = async (item) => {
+ const entradaEstoque = async (item) => {
     const qtdEntrada = Number(retiradas[item.id] || 0);
 
     if (isNaN(qtdEntrada) || qtdEntrada <= 0) {
@@ -299,6 +315,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantidade: novaQtd }),
       });
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
       const atualizado = await response.json();
       setMateriais((prev) =>
         prev.map((m) => (m.id === item.id ? atualizado : m))
@@ -307,7 +326,12 @@ export default function App() {
       Keyboard.dismiss();
       alertar('Sucesso', `Adicionadas ${qtdEntrada} unidades a "${item.nome}". Novo saldo: ${novaQtd}`);
     } catch (error) {
-      alertar('Erro', 'Não foi possível realizar a entrada.');
+      console.error('Erro na entrada:', error);
+      if (error.message.includes('Network') || error.message.includes('fetch')) {
+        alertar('Sem conexão', 'Verifique sua conexão com a internet.');
+      } else {
+        alertar('Erro', 'Não foi possível realizar a entrada.');
+      }
     }
   };
 
