@@ -188,6 +188,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
       });
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
       const novo = await response.json();
       setMateriais((prev) => [...prev, novo]);
       setNome('');
@@ -195,7 +198,12 @@ export default function App() {
       setFormVisivel(false);
       alertar('Sucesso', `${novo.nome} cadastrado com ${novo.quantidade} unidades.`);
     } catch (error) {
-      alertar('Erro', 'Não foi possível cadastrar o material.');
+      console.error('Erro ao cadastrar:', error);
+      if (error.message.includes('Network') || error.message.includes('fetch')) {
+        alertar('Sem conexão', 'Verifique sua conexão com a internet.');
+      } else {
+        alertar('Erro', 'Não foi possível cadastrar o material.');
+      }
     } finally {
       setCadastrando(false);
     }
