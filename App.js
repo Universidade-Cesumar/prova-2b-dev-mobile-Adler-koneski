@@ -487,8 +487,9 @@ export default function App() {
         </View>
       )}
 
-      <View style={styles.listHeader}>
+    <View style={styles.listHeader}>
         <Text style={styles.sectionLabel}>INVENTÁRIO</Text>
+        <Text testID="total-itens" style={styles.totalItens}>{materiaisFiltrados.length} itens</Text>
         <Pressable onPress={buscarMateriais}>
           <Text style={styles.refreshLink}>Atualizar</Text>
         </Pressable>
@@ -496,6 +497,7 @@ export default function App() {
 
       <View style={styles.searchContainer}>
         <TextInput
+          testID="input-busca"
           style={styles.searchInput}
           placeholder="Buscar material..."
           placeholderTextColor="#9aa5b1"
@@ -522,65 +524,70 @@ export default function App() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1e3a5f']} />
           }
-          renderItem={({ item }) => {
-            const estoqueBaixo = Number(item.quantidade) <= 20;
-            const zerado = Number(item.quantidade) === 0;
-            return (
-              <View style={[styles.item, zerado && styles.itemZerado]}>
-                {estoqueBaixo && <View style={styles.itemAccent} />}
-                <View style={{ flex: 1 }}>
-                  <View style={styles.itemContent}>
-                    <View style={styles.itemInfo}>
-                      <Text style={styles.itemNome}>{item.nome}</Text>
-                      <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
-                        {estoqueBaixo ? 'Estoque crítico' : 'Disponível'}
-                      </Text>
+         renderItem={({ item }) => {
+              const qtd = Number(item.quantidade);
+              const estoqueCritico = qtd < 10;
+              const estoqueBaixo = qtd <= 20;
+              const zerado = qtd === 0;
+              return (
+                <View
+                  style={[styles.item, zerado && styles.itemZerado, estoqueCritico && styles.itemCritico]}
+                  accessibilityLabel={estoqueCritico ? 'estoque-critico' : undefined}
+                >
+                  {estoqueBaixo && <View style={styles.itemAccent} />}
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.itemContent}>
+                      <View style={styles.itemInfo}>
+                        <Text style={styles.itemNome}>{item.nome}</Text>
+                        <Text style={[styles.itemLabel, estoqueBaixo && styles.itemLabelAlerta]}>
+                          {estoqueCritico ? 'Estoque crítico' : estoqueBaixo ? 'Estoque baixo' : 'Disponível'}
+                        </Text>
+                      </View>
+                      <View style={styles.itemRight}>
+                        <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
+                          {item.quantidade}
+                        </Text>
+                        <Text style={styles.itemQtdLabel}>unidades</Text>
+                      </View>
                     </View>
-                    <View style={styles.itemRight}>
-                      <Text style={[styles.itemQtd, estoqueBaixo && styles.itemQtdAlerta]}>
-                        {item.quantidade}
-                      </Text>
-                      <Text style={styles.itemQtdLabel}>unidades</Text>
+                    <View style={styles.itemActions}>
+                      <TextInput
+                        testID="input-retirada"
+                        style={styles.inputRetirada}
+                        placeholder="Qtd"
+                        placeholderTextColor="#9aa5b1"
+                        value={retiradas[item.id] || ''}
+                        onChangeText={(text) =>
+                          setRetiradas((prev) => ({ ...prev, [item.id]: text }))
+                        }
+                        keyboardType="numeric"
+                      />
+                      <Pressable
+                        testID="btn-baixar"
+                        style={({ pressed }) => [styles.baixarButton, zerado && styles.buttonDisabled, pressed && { opacity: 0.7 }]}
+                        onPress={() => baixarEstoque(item)}
+                        disabled={zerado}
+                      >
+                        <Text style={styles.baixarButtonText}>Retirar</Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [styles.entradaButton, pressed && { opacity: 0.7 }]}
+                        onPress={() => entradaEstoque(item)}
+                      >
+                        <Text style={styles.entradaButtonText}>Entrada</Text>
+                      </Pressable>
+                      <Pressable
+                        testID="btn-excluir"
+                        style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.7 }]}
+                        onPress={() => excluirMaterial(item.id, item.nome)}
+                      >
+                        <Text style={styles.deleteButtonText}>Excluir</Text>
+                      </Pressable>
                     </View>
-                  </View>
-                  <View style={styles.itemActions}>
-                    <TextInput
-                      testID="input-retirada"
-                      style={styles.inputRetirada}
-                      placeholder="Qtd"
-                      placeholderTextColor="#9aa5b1"
-                      value={retiradas[item.id] || ''}
-                      onChangeText={(text) =>
-                        setRetiradas((prev) => ({ ...prev, [item.id]: text }))
-                      }
-                      keyboardType="numeric"
-                    />
-                    <Pressable
-                      testID="btn-baixar"
-                      style={({ pressed }) => [styles.baixarButton, zerado && styles.buttonDisabled, pressed && { opacity: 0.7 }]}
-                      onPress={() => baixarEstoque(item)}
-                      disabled={zerado}
-                    >
-                      <Text style={styles.baixarButtonText}>Retirar</Text>
-                    </Pressable>
-                    <Pressable
-                      style={({ pressed }) => [styles.entradaButton, pressed && { opacity: 0.7 }]}
-                      onPress={() => entradaEstoque(item)}
-                    >
-                      <Text style={styles.entradaButtonText}>Entrada</Text>
-                    </Pressable>
-                    <Pressable
-                      testID="btn-excluir"
-                      style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.7 }]}
-                      onPress={() => excluirMaterial(item.id, item.nome)}
-                    >
-                      <Text style={styles.deleteButtonText}>Excluir</Text>
-                    </Pressable>
                   </View>
                 </View>
-              </View>
-            );
-          }}
+              );
+            }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
@@ -968,6 +975,15 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#dc2626',
     fontSize: 11,
+    fontWeight: '600',
+  },
+  itemCritico: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+  },
+  totalItens: {
+    fontSize: 12,
+    color: '#64748b',
     fontWeight: '600',
   },
   emptyContainer: {
