@@ -137,14 +137,22 @@ export default function App() {
   // - Entrada de estoque (PUT) para reposição
   // - Bloqueio de retirada em estoque zerado
   // - Bloqueio de exclusão com estoque acima de zero
-  const buscarMateriais = async () => {
+ const buscarMateriais = async () => {
     setLoading(true);
     try {
       const response = await fetch(API_MATERIAIS);
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
       const data = await response.json();
       setMateriais(data);
     } catch (error) {
-      alertar('Erro', 'Não foi possível carregar o estoque.');
+      console.error('Erro ao buscar materiais:', error);
+      if (error.message.includes('Network') || error.message.includes('fetch')) {
+        alertar('Sem conexão', 'Verifique sua conexão com a internet e tente novamente.');
+      } else {
+        alertar('Erro', 'Não foi possível carregar o estoque. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
